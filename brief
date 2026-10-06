@@ -1,0 +1,17 @@
+#!/bin/bash
+# Reader — overnight markets brief.
+#   ./brief run        collect overnight news and write today's brief
+#   ./brief collect    fetch feeds only (no AI, no cost)
+#   ./brief dry-run    everything except AI calls; shows projected cost
+#   ./brief sources    source health from the latest collection
+#   ./brief doctor     check the API key and model access
+#   ./brief open       open the latest brief
+#   ./brief eval-check   replay past errors against the checker (a few cents)
+#   ./brief replay-find <run-id>   re-run the analyst on a past morning (about $0.35)
+#   ./brief since HH:MM   every stage over today's news since a time, outside the brief (about $1 to $2)
+cd "$(dirname "$0")" || exit 1
+if [ ! -x .venv/bin/python ]; then
+  echo "First-time setup needed. Run: ./setup.sh"
+  exit 1
+fi
+exec .venv/bin/python -m reader "$@"

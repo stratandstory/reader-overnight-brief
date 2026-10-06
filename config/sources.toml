@@ -1,0 +1,849 @@
+# Reader — source registry
+#
+# kind   news          publisher reporting, read from the publisher's own RSS feed
+#        official      central banks, regulators, government (primary sources)
+#        wire          company press releases (primary for the company's own announcements);
+#                      only items that mention a watchlist company are kept
+#        institutional attributed market commentary; shown as a link, never used as evidence
+#        calendar      official schedules for the forward look
+# tier   0 = primary source   1 = major outlet: a single report may run, attributed
+#        2 = major context outlet: an uncorroborated single report goes to Developing
+# owner  outlets with the same owner never count as independent corroboration
+# terms  what the publisher's terms of use say about automated reading and AI use, read on 2026-10-01:
+#        official   government, central bank or regulator publication
+#        no-clause  no clause against automated reading or AI use (or no terms page)
+#        restricts  the terms restrict automated access, AI use, or both
+#        not-read   terms not reviewed
+#        [sources] policy in config/local.toml decides which of these a machine reads (./brief choose-sources).
+#        terms_note summarises the clause; the dates are the terms' own.
+#
+# Access rules applied to every source: the publisher's own feed or page, robots.txt
+# respected, an honest User-Agent, headlines and summaries only for journalism
+# (article bodies are never fetched for the model).
+
+# ---------------------------------------------------------------- Tier 1 news
+[[source]]
+id = "bloomberg_markets"
+publisher = "Bloomberg"
+section = "Markets"
+url = "https://feeds.bloomberg.com/markets/news.rss"
+kind = "news"
+tier = 1
+owner = "Bloomberg"
+terms = "restricts"
+terms_note = "Terms A.3 bar any robot or other automated device used to access, copy or monitor the service; for your own noncommercial use. No AI clause"
+
+[[source]]
+id = "bloomberg_economics"
+publisher = "Bloomberg"
+section = "Economics"
+url = "https://feeds.bloomberg.com/economics/news.rss"
+kind = "news"
+tier = 1
+owner = "Bloomberg"
+terms = "restricts"
+terms_note = "Terms A.3 bar any robot or other automated device used to access, copy or monitor the service; for your own noncommercial use. No AI clause"
+
+[[source]]
+id = "bloomberg_politics"
+publisher = "Bloomberg"
+section = "Politics"
+url = "https://feeds.bloomberg.com/politics/news.rss"
+kind = "news"
+tier = 1
+owner = "Bloomberg"
+terms = "restricts"
+terms_note = "Terms A.3 bar any robot or other automated device used to access, copy or monitor the service; for your own noncommercial use. No AI clause"
+
+[[source]]
+id = "bloomberg_tech"
+publisher = "Bloomberg"
+section = "Technology"
+url = "https://feeds.bloomberg.com/technology/news.rss"
+kind = "news"
+tier = 1
+owner = "Bloomberg"
+terms = "restricts"
+terms_note = "Terms A.3 bar any robot or other automated device used to access, copy or monitor the service; for your own noncommercial use. No AI clause"
+
+[[source]]
+id = "bloomberg_industries"
+publisher = "Bloomberg"
+section = "Industries"
+url = "https://feeds.bloomberg.com/industries/news.rss"
+kind = "news"
+tier = 1
+owner = "Bloomberg"
+terms = "restricts"
+terms_note = "Terms A.3 bar any robot or other automated device used to access, copy or monitor the service; for your own noncommercial use. No AI clause"
+
+[[source]]
+id = "wsj_markets"
+publisher = "The Wall Street Journal"
+section = "Markets"
+url = "https://feeds.content.dowjones.io/public/rss/RSSMarketsMain"
+kind = "news"
+tier = 1
+owner = "Dow Jones"
+terms = "restricts"
+terms_note = "Dow Jones terms of 2026-06-30: 9.4.1 bars access by automated means or an AI agent or assistant; 9.4.2 bars use of content for any form of AI, for training or grounding; RSS is for individual, personal, non-commercial use"
+
+[[source]]
+id = "wsj_business"
+publisher = "The Wall Street Journal"
+section = "Business"
+url = "https://feeds.content.dowjones.io/public/rss/WSJcomUSBusiness"
+kind = "news"
+tier = 1
+owner = "Dow Jones"
+terms = "restricts"
+terms_note = "Dow Jones terms of 2026-06-30: 9.4.1 bars access by automated means or an AI agent or assistant; 9.4.2 bars use of content for any form of AI, for training or grounding; RSS is for individual, personal, non-commercial use"
+
+[[source]]
+id = "wsj_economy"
+publisher = "The Wall Street Journal"
+section = "Economy"
+url = "https://feeds.content.dowjones.io/public/rss/socialeconomyfeed"
+kind = "news"
+tier = 1
+owner = "Dow Jones"
+terms = "restricts"
+terms_note = "Dow Jones terms of 2026-06-30: 9.4.1 bars access by automated means or an AI agent or assistant; 9.4.2 bars use of content for any form of AI, for training or grounding; RSS is for individual, personal, non-commercial use"
+
+[[source]]
+id = "wsj_world"
+publisher = "The Wall Street Journal"
+section = "World"
+url = "https://feeds.content.dowjones.io/public/rss/RSSWorldNews"
+kind = "news"
+tier = 1
+owner = "Dow Jones"
+terms = "restricts"
+terms_note = "Dow Jones terms of 2026-06-30: 9.4.1 bars access by automated means or an AI agent or assistant; 9.4.2 bars use of content for any form of AI, for training or grounding; RSS is for individual, personal, non-commercial use"
+
+[[source]]
+id = "wsj_tech"
+publisher = "The Wall Street Journal"
+section = "Technology"
+url = "https://feeds.content.dowjones.io/public/rss/RSSWSJD"
+kind = "news"
+tier = 1
+owner = "Dow Jones"
+terms = "restricts"
+terms_note = "Dow Jones terms of 2026-06-30: 9.4.1 bars access by automated means or an AI agent or assistant; 9.4.2 bars use of content for any form of AI, for training or grounding; RSS is for individual, personal, non-commercial use"
+
+[[source]]
+id = "ft_markets"
+publisher = "Financial Times"
+section = "Markets"
+url = "https://www.ft.com/markets?format=rss"
+kind = "news"
+tier = 1
+owner = "Nikkei"
+terms = "restricts"
+terms_note = "Terms of 2026-07-01, 3.5: no use with AI tools or models to generate any data or content; RSS for personal use, not archived"
+
+[[source]]
+id = "ft_companies"
+publisher = "Financial Times"
+section = "Companies"
+url = "https://www.ft.com/companies?format=rss"
+kind = "news"
+tier = 1
+owner = "Nikkei"
+terms = "restricts"
+terms_note = "Terms of 2026-07-01, 3.5: no use with AI tools or models to generate any data or content; RSS for personal use, not archived"
+
+[[source]]
+id = "ft_economy"
+publisher = "Financial Times"
+section = "Global Economy"
+url = "https://www.ft.com/global-economy?format=rss"
+kind = "news"
+tier = 1
+owner = "Nikkei"
+terms = "restricts"
+terms_note = "Terms of 2026-07-01, 3.5: no use with AI tools or models to generate any data or content; RSS for personal use, not archived"
+
+# ---------------------------------------------------------------- Tier 2 news
+[[source]]
+id = "nyt_business"
+publisher = "The New York Times"
+section = "Business"
+url = "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml"
+kind = "news"
+tier = 2
+owner = "New York Times"
+terms = "restricts"
+terms_note = "Terms of 2026-01-20: no use for training, fine-tuning or grounding an AI system or in retrieval-augmented generation, and no automated collection; RSS for personal use in a news reader"
+
+[[source]]
+id = "nyt_dealbook"
+publisher = "The New York Times"
+section = "DealBook"
+url = "https://rss.nytimes.com/services/xml/rss/nyt/Dealbook.xml"
+kind = "news"
+tier = 2
+owner = "New York Times"
+terms = "restricts"
+terms_note = "Terms of 2026-01-20: no use for training, fine-tuning or grounding an AI system or in retrieval-augmented generation, and no automated collection; RSS for personal use in a news reader"
+
+[[source]]
+id = "nyt_economy"
+publisher = "The New York Times"
+section = "Economy"
+url = "https://rss.nytimes.com/services/xml/rss/nyt/Economy.xml"
+kind = "news"
+tier = 2
+owner = "New York Times"
+terms = "restricts"
+terms_note = "Terms of 2026-01-20: no use for training, fine-tuning or grounding an AI system or in retrieval-augmented generation, and no automated collection; RSS for personal use in a news reader"
+
+[[source]]
+id = "nyt_world"
+publisher = "The New York Times"
+section = "World"
+url = "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
+kind = "news"
+tier = 2
+owner = "New York Times"
+terms = "restricts"
+terms_note = "Terms of 2026-01-20: no use for training, fine-tuning or grounding an AI system or in retrieval-augmented generation, and no automated collection; RSS for personal use in a news reader"
+
+[[source]]
+id = "cnbc_top"
+publisher = "CNBC"
+section = "Top News"
+url = "https://www.cnbc.com/id/100003114/device/rss/rss.html"
+kind = "news"
+tier = 2
+owner = "NBCUniversal"
+terms = "restricts"
+terms_note = "Versant terms of 2025-09-30: no data extraction by robots or crawlers; no derivative works. No AI clause"
+
+[[source]]
+id = "cnbc_finance"
+publisher = "CNBC"
+section = "Finance"
+url = "https://www.cnbc.com/id/10000664/device/rss/rss.html"
+kind = "news"
+tier = 2
+owner = "NBCUniversal"
+terms = "restricts"
+terms_note = "Versant terms of 2025-09-30: no data extraction by robots or crawlers; no derivative works. No AI clause"
+
+[[source]]
+id = "cnbc_world"
+publisher = "CNBC"
+section = "World"
+url = "https://www.cnbc.com/id/100727362/device/rss/rss.html"
+kind = "news"
+tier = 2
+owner = "NBCUniversal"
+terms = "restricts"
+terms_note = "Versant terms of 2025-09-30: no data extraction by robots or crawlers; no derivative works. No AI clause"
+
+[[source]]
+id = "cnbc_economy"
+publisher = "CNBC"
+section = "Economy"
+url = "https://www.cnbc.com/id/20910258/device/rss/rss.html"
+kind = "news"
+tier = 2
+owner = "NBCUniversal"
+terms = "restricts"
+terms_note = "Versant terms of 2025-09-30: no data extraction by robots or crawlers; no derivative works. No AI clause"
+
+[[source]]
+id = "cnbc_earnings"
+publisher = "CNBC"
+section = "Earnings"
+url = "https://www.cnbc.com/id/15839135/device/rss/rss.html"
+kind = "news"
+tier = 2
+owner = "NBCUniversal"
+terms = "restricts"
+terms_note = "Versant terms of 2025-09-30: no data extraction by robots or crawlers; no derivative works. No AI clause"
+
+[[source]]
+id = "marketwatch_top"
+publisher = "MarketWatch"
+section = "Top Stories"
+url = "https://feeds.content.dowjones.io/public/rss/mw_topstories"
+kind = "news"
+tier = 2
+owner = "Dow Jones"
+terms = "restricts"
+terms_note = "Same Dow Jones terms as The Wall Street Journal: no automated or AI-agent access, no AI training or grounding; RSS for personal, non-commercial use"
+
+[[source]]
+id = "marketwatch_bulletins"
+publisher = "MarketWatch"
+section = "Bulletins"
+url = "https://feeds.content.dowjones.io/public/rss/mw_bulletins"
+kind = "news"
+tier = 2
+owner = "Dow Jones"
+terms = "restricts"
+terms_note = "Same Dow Jones terms as The Wall Street Journal: no automated or AI-agent access, no AI training or grounding; RSS for personal, non-commercial use"
+
+[[source]]
+id = "bbc_business"
+publisher = "BBC News"
+section = "Business"
+url = "https://feeds.bbci.co.uk/news/business/rss.xml"
+kind = "news"
+tier = 2
+owner = "BBC"
+terms = "restricts"
+terms_note = "Terms of 2022-09-19: permission needed to use content to develop or train AI or to do computer analysis; no taking metadata from RSS feeds"
+
+[[source]]
+id = "scmp_business"
+publisher = "South China Morning Post"
+section = "Business"
+url = "https://www.scmp.com/rss/92/feed"
+kind = "news"
+tier = 2
+owner = "Alibaba"
+terms = "restricts"
+terms_note = "Terms 3.2.1: no automated system to access, extract or index content for any purpose; content reserved against retrieval-augmented generation"
+
+# ---------------------------------------------------------------- Tier 2 news, added 2026-10-02
+# Each is a new owner. Terms were read on 2026-10-01 and are summarised per entry.
+[[source]]
+id = "wapo_business"
+publisher = "The Washington Post"
+section = "Business"
+url = "https://feeds.washingtonpost.com/rss/business"
+kind = "news"
+tier = 2
+owner = "Nash Holdings"
+terms = "restricts"
+terms_note = "RSS terms permit personal news-reader use; terms section 7 bar use with AI tools to generate text, commercial or personal"
+
+[[source]]
+id = "euronews_business"
+publisher = "Euronews"
+section = "Business"
+url = "https://www.euronews.com/rss?level=theme&name=business"
+kind = "news"
+tier = 2
+owner = "Alpac Capital"
+terms = "no-clause"
+terms_note = "Personal, non-commercial home use; no AI, bot or scraping clause"
+
+[[source]]
+id = "japantimes_business"
+publisher = "The Japan Times"
+section = "Business"
+url = "https://www.japantimes.co.jp/business/feed/"
+kind = "news"
+tier = 2
+owner = "News2u Holdings"
+terms = "no-clause"
+terms_note = "No terms page exists; the republishing page says use of content needs permission. robots.txt disallows /rss and /rssFeed/*, not /business/feed/"
+
+[[source]]
+id = "yonhap_economy"
+publisher = "Yonhap News Agency"
+section = "Economy and finance"
+url = "https://en.yna.co.kr/RSS/economy-finance.xml"
+kind = "news"
+tier = 2
+owner = "Yonhap"
+terms = "no-clause"
+terms_note = "No publishing or distribution without permission; no AI, bot or scraping clause"
+# The Korea Herald's business feed carries Yonhap copy and is not used alongside it
+
+[[source]]
+id = "globe_business"
+publisher = "The Globe and Mail"
+section = "Business"
+url = "https://www.theglobeandmail.com/arc/outboundfeeds/rss/category/business/"
+kind = "news"
+tier = 2
+owner = "Woodbridge"
+terms = "restricts"
+terms_note = "RSS listed among permitted uses; no use for developing other products or services, AI training named; a spider and robot clause"
+# robots.txt blocks named AI crawlers, not generic agents
+
+[[source]]
+id = "hill_business"
+publisher = "The Hill"
+section = "Business"
+url = "https://thehill.com/business/feed/"
+kind = "news"
+tier = 2
+owner = "Nexstar"
+terms = "restricts"
+terms_note = "Nexstar terms of 2026-09-16: no robots for any purpose; no content in any AI product"
+
+[[source]]
+id = "straits_business"
+publisher = "The Straits Times"
+section = "Business"
+url = "https://www.straitstimes.com/news/business/rss.xml"
+kind = "news"
+tier = 2
+owner = "SPH Media"
+terms = "restricts"
+terms_note = "No bots or scripts to access or use the site, RSS feeds included; no AI clause"
+# robots.txt: Crawl-delay 10
+
+[[source]]
+id = "cbs_moneywatch"
+publisher = "CBS News"
+section = "MoneyWatch"
+url = "https://www.cbsnews.com/latest/rss/moneywatch"
+kind = "news"
+tier = 2
+owner = "Paramount"
+terms = "no-clause"
+terms_note = "Personal, non-commercial; a generic clause against unauthorized scraping; no AI clause"
+# The feed mixes in video and podcast entries, which the screen drops
+
+[[source]]
+id = "semafor"
+publisher = "Semafor"
+section = "Business, energy and China"
+url = "https://www.semafor.com/rss.xml"
+kind = "news"
+tier = 2
+owner = "Semafor"
+terms = "no-clause"
+terms_note = "No terms page exists, only a privacy policy"
+categories = ["Business", "Energy", "China"]
+# the site-wide feed (about 260 items) tagged by vertical; only these categories are kept. robots.txt blocks GPTBot
+
+# ---------------------------------------------------------------- Official (primary)
+[[source]]
+id = "fed_press"
+publisher = "Federal Reserve Board"
+section = "Press releases"
+url = "https://www.federalreserve.gov/feeds/press_all.xml"
+kind = "official"
+tier = 0
+owner = "Federal Reserve"
+terms = "official"
+terms_note = "U.S. government work"
+
+[[source]]
+id = "fed_speeches"
+publisher = "Federal Reserve Board"
+section = "Speeches"
+url = "https://www.federalreserve.gov/feeds/speeches.xml"
+kind = "official"
+tier = 0
+owner = "Federal Reserve"
+terms = "official"
+terms_note = "U.S. government work"
+
+[[source]]
+id = "sec_press"
+publisher = "U.S. Securities and Exchange Commission"
+section = "Press releases"
+url = "https://www.sec.gov/news/pressreleases.rss"
+kind = "official"
+tier = 0
+owner = "SEC"
+terms = "official"
+terms_note = "U.S. government work"
+
+[[source]]
+id = "whitehouse_actions"
+publisher = "The White House"
+section = "Presidential actions"
+url = "https://www.whitehouse.gov/presidential-actions/feed/"
+kind = "official"
+tier = 0
+owner = "White House"
+terms = "official"
+terms_note = "U.S. government work"
+
+[[source]]
+id = "ftc_press"
+publisher = "Federal Trade Commission"
+section = "Press releases"
+url = "https://www.ftc.gov/feeds/press-release.xml"
+kind = "official"
+tier = 0
+owner = "FTC"
+terms = "official"
+terms_note = "U.S. government work"
+
+[[source]]
+id = "ecb_press"
+publisher = "European Central Bank"
+section = "Press"
+url = "https://www.ecb.europa.eu/rss/press.html"
+kind = "official"
+tier = 0
+owner = "ECB"
+terms = "official"
+terms_note = "European Central Bank publication"
+
+[[source]]
+id = "boe_news"
+publisher = "Bank of England"
+section = "News"
+url = "https://www.bankofengland.co.uk/rss/news"
+kind = "official"
+tier = 0
+owner = "Bank of England"
+terms = "official"
+terms_note = "Bank of England publication"
+
+[[source]]
+id = "boj_news"
+publisher = "Bank of Japan"
+section = "What's new"
+url = "https://www.boj.or.jp/en/rss/whatsnew.xml"
+kind = "official"
+tier = 0
+owner = "Bank of Japan"
+terms = "official"
+terms_note = "Bank of Japan publication"
+
+[[source]]
+id = "sec_8k"
+publisher = "U.S. Securities and Exchange Commission"
+section = "Current 8-K filings"
+url = "https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=8-K&company=&dateb=&owner=include&start=0&count=100&output=atom"
+kind = "wire"
+tier = 0
+owner = "SEC"
+terms = "official"
+terms_note = "U.S. government work; the SEC asks automated requests to carry a contact email"
+needs_contact = true
+
+# ---------------------------------------------------------------- Official (primary), added 2026-10-02
+# From the source survey (the author's source survey of 2026-10-01). Government works, or permissive reuse terms.
+[[source]]
+id = "occ_news"
+publisher = "Office of the Comptroller of the Currency"
+section = "News releases"
+url = "https://www.occ.gov/rss/occ_news.xml"
+kind = "official"
+tier = 0
+owner = "OCC"
+terms = "official"
+terms_note = "U.S. government work"
+
+[[source]]
+id = "cftc_press"
+publisher = "Commodity Futures Trading Commission"
+section = "Press releases"
+url = "https://www.cftc.gov/RSS/RSSGP/rssgp.xml"
+kind = "official"
+tier = 0
+owner = "CFTC"
+terms = "official"
+terms_note = "U.S. government work"
+# no summaries in the feed; the release page is read in full, as for every official source
+
+[[source]]
+id = "cfpb_newsroom"
+publisher = "Consumer Financial Protection Bureau"
+section = "Newsroom"
+url = "https://www.consumerfinance.gov/about-us/newsroom/feed/"
+kind = "official"
+tier = 0
+owner = "CFPB"
+terms = "official"
+terms_note = "U.S. government work"
+enabled = false   # HTTP 403 on every check from 2026-10-02 to 2026-10-05. The site refuses Python's HTTP client
+                  # whatever the User-Agent, and answers curl sending the same agent (checked 2026-10-05), so the
+                  # block is on the client, not the agent string; reaching it would mean imitating another client
+
+[[source]]
+id = "census_indicators"
+publisher = "U.S. Census Bureau"
+section = "Economic indicators"
+url = "https://www.census.gov/economic-indicators/indicator.xml"
+kind = "official"
+tier = 0
+owner = "Census Bureau"
+terms = "official"
+terms_note = "U.S. government work"
+# one entry per indicator (retail sales, durable goods, trade, construction, housing starts), re-dated
+# at each release. BLS and BEA remain unreachable; this is the Commerce side
+
+[[source]]
+id = "bis_press"
+publisher = "Bank for International Settlements"
+section = "Press releases"
+url = "https://www.bis.org/doclist/all_pressrels.rss"
+kind = "official"
+tier = 0
+owner = "BIS"
+terms = "official"
+terms_note = "BIS terms: non-commercial use, with the BIS cited as the source"
+day_only = true
+# the feed dates releases without times
+
+[[source]]
+id = "bis_speeches"
+publisher = "Bank for International Settlements"
+section = "Central bank speeches"
+url = "https://www.bis.org/doclist/cbspeeches.rss"
+kind = "official"
+tier = 0
+owner = "BIS"
+terms = "official"
+terms_note = "BIS terms: non-commercial use, with the BIS cited as the source"
+# every central bank's speeches in one feed, including Fed presidents, whom the Board's feed does not
+# carry; posted one to two days after delivery
+
+[[source]]
+id = "boe_speeches"
+publisher = "Bank of England"
+section = "Speeches"
+url = "https://www.bankofengland.co.uk/rss/speeches"
+kind = "official"
+tier = 0
+owner = "Bank of England"
+terms = "official"
+terms_note = "Bank of England publication"
+
+[[source]]
+id = "ecb_supervision"
+publisher = "European Central Bank"
+section = "Banking supervision"
+url = "https://www.bankingsupervision.europa.eu/rss/press.html"
+kind = "official"
+tier = 0
+owner = "ECB"
+terms = "official"
+terms_note = "European Central Bank publication"
+
+[[source]]
+id = "snb_press"
+publisher = "Swiss National Bank"
+section = "Press releases"
+url = "https://www.snb.ch/public/rss/en/pressrel"
+kind = "official"
+tier = 0
+owner = "Swiss National Bank"
+terms = "official"
+terms_note = "SNB terms: may be used for non-commercial purposes, with reference to the source"
+
+[[source]]
+id = "boc_press"
+publisher = "Bank of Canada"
+section = "Press releases"
+url = "https://www.bankofcanada.ca/content_type/press-releases/feed/"
+kind = "official"
+tier = 0
+owner = "Bank of Canada"
+terms = "official"
+terms_note = "Bank of Canada publication"
+# the site-wide /feed/ carries future-dated events; this one is releases only
+
+[[source]]
+id = "rba_media"
+publisher = "Reserve Bank of Australia"
+section = "Media releases"
+url = "https://www.rba.gov.au/rss/rss-cb-media-releases.xml"
+kind = "official"
+tier = 0
+owner = "Reserve Bank of Australia"
+terms = "official"
+terms_note = "Reserve Bank of Australia publication"
+
+[[source]]
+id = "fdic_press"
+publisher = "Federal Deposit Insurance Corporation"
+section = "Press releases"
+url = "https://www.fdic.gov/news/press-releases"
+kind = "official"
+format = "fdic_press"
+tier = 0
+owner = "FDIC"
+terms = "official"
+terms_note = "U.S. government work"
+day_only = true
+# the index page, dated without times; the FDIC's only feed is on GovDelivery, whose robots.txt disallows all
+
+[[source]]
+id = "treasury_press"
+publisher = "U.S. Department of the Treasury"
+section = "Press releases"
+url = "https://home.treasury.gov/news-data/press-releases/manifest.json"
+kind = "official"
+format = "treasury_press"
+tier = 0
+owner = "U.S. Treasury"
+terms = "official"
+terms_note = "U.S. government work"
+# the listing behind the press-release page: a manifest pointing at one JSON file per year, with full
+# timestamps. Treasury's only feed is on GovDelivery, whose robots.txt disallows all
+
+[[source]]
+id = "nyfed_news"
+publisher = "Federal Reserve Bank of New York"
+section = "News"
+url = "https://www.newyorkfed.org/newsevents/news"
+kind = "official"
+format = "nyfed_news"
+tier = 0
+owner = "Federal Reserve"
+terms = "official"
+terms_note = "Federal Reserve Bank of New York publication"
+day_only = true
+# the year's news index, dated without times; Markets, Banking and Research rows from the last ten
+# days are kept. The New York Fed no longer publishes RSS
+
+[[source]]
+id = "nyfed_speeches"
+publisher = "Federal Reserve Bank of New York"
+section = "Speeches"
+url = "https://www.newyorkfed.org/newsevents/speeches"
+kind = "official"
+format = "nyfed_speeches"
+tier = 0
+owner = "Federal Reserve"
+terms = "official"
+terms_note = "Federal Reserve Bank of New York publication"
+day_only = true
+# the speeches index, same markup as the news index, dated without times; Williams's speeches, which the
+# Board's feed does not carry and the BIS feed carries a day or two late
+
+# ---------------------------------------------------------------- Company press releases
+[[source]]
+id = "prn_all"
+publisher = "PR Newswire"
+section = "All releases"
+url = "https://www.prnewswire.com/rss/all-news-releases-from-PR-newswire-news.rss"
+kind = "wire"
+tier = 0
+owner = "PR Newswire"
+terms = "restricts"
+terms_note = "Terms of 2023-09-01: an anti-robot clause; the AI clause covers training only; no redistribution in full text or abstract without consent. Its RSS page and llms.txt file invite automated use"
+
+[[source]]
+id = "prn_earnings"
+publisher = "PR Newswire"
+section = "Earnings"
+url = "https://www.prnewswire.com/rss/financial-services-latest-news/earnings-list.rss"
+kind = "wire"
+tier = 0
+owner = "PR Newswire"
+terms = "restricts"
+terms_note = "Terms of 2023-09-01: an anti-robot clause; the AI clause covers training only; no redistribution in full text or abstract without consent. Its RSS page and llms.txt file invite automated use"
+
+[[source]]
+id = "prn_deals"
+publisher = "PR Newswire"
+section = "Mergers and acquisitions"
+url = "https://www.prnewswire.com/rss/financial-services-latest-news/acquisitions-mergers-and-takeovers-list.rss"
+kind = "wire"
+tier = 0
+owner = "PR Newswire"
+terms = "restricts"
+terms_note = "Terms of 2023-09-01: an anti-robot clause; the AI clause covers training only; no redistribution in full text or abstract without consent. Its RSS page and llms.txt file invite automated use"
+
+[[source]]
+id = "prn_sitemap"
+publisher = "PR Newswire"
+section = "Latest releases"
+url = "https://www.prnewswire.com/sitemap-news.xml?page=1"
+kind = "wire"
+format = "news_sitemap"
+tier = 0
+owner = "PR Newswire"
+terms = "restricts"
+terms_note = "Terms of 2023-09-01: an anti-robot clause; the AI clause covers training only; no redistribution in full text or abstract without consent. Its RSS page and llms.txt file invite automated use"
+# The RSS feed above shows only the latest 20 releases: 28 minutes' worth at 6:36 AM on
+# Monday, Sep 28 2026, against a 30-minute collector. Page 1 of the news sitemap (listed in
+# robots.txt) holds the latest 100, about four hours on a weekday morning. It has titles and
+# tickers but no summaries, so it comes after the RSS feed, which fills in the summary.
+
+[[source]]
+id = "businesswire_all"
+publisher = "Business Wire"
+section = "All releases"
+url = "https://feed.businesswire.com/rss/home/?rss=G1QFDERJXkJeGVtRWA=="
+kind = "wire"
+tier = 0
+owner = "Business Wire"
+terms = "not-read"
+enabled = false   # robots.txt never answers (times out or errors behind the CDN); the feed itself
+                  # loads, but no answer counts as "not allowed". 26 of 26 checks failed, Sep 26–27 2026
+
+[[source]]
+id = "globenewswire_public"
+publisher = "GlobeNewswire"
+section = "Public companies"
+url = "https://www.globenewswire.com/RssFeed/orgclass/1/feedTitle/GlobeNewswire%20-%20News%20about%20Public%20Companies"
+kind = "wire"
+tier = 0
+owner = "GlobeNewswire"
+terms = "not-read"
+enabled = false   # refuses automated connections (checked 2026-09-26)
+
+# ---------------------------------------------------------------- Institutional view
+[[source]]
+id = "edward_jones"
+publisher = "Edward Jones"
+section = "Daily market snapshot"
+url = "https://www.edwardjones.com/us-en/market-news-insights/stock-market-news/daily-market-recap"
+kind = "institutional"
+format = "edward_jones"
+tier = 2
+owner = "Edward Jones"
+terms = "not-read"
+terms_note = "Terms not reviewed. Link and title only; nothing from it is sent to a model"
+model_ok = false   # link and title only; no text is kept or sent to a model
+
+# ---------------------------------------------------------------- Calendars
+[[source]]
+id = "fomc_calendar"
+publisher = "Federal Reserve Board"
+section = "FOMC meeting calendar"
+url = "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
+kind = "calendar"
+format = "fomc"
+tier = 0
+owner = "Federal Reserve"
+terms = "official"
+terms_note = "U.S. government work"
+
+[[source]]
+id = "treasury_auctions"
+publisher = "U.S. Treasury (TreasuryDirect)"
+section = "Upcoming auctions"
+url = "https://www.treasurydirect.gov/TA_WS/securities/upcoming?format=json"
+kind = "calendar"
+format = "treasury_auctions"
+tier = 0
+owner = "U.S. Treasury"
+terms = "official"
+terms_note = "U.S. government work"
+enabled = false   # robots.txt disallows all automated access (checked 2026-09-26)
+
+# ---------------------------------------------------------------- Considered, not used
+# Reuters         no public feed; needs a licensed product
+# AP              no public feed; the AP Media API is licensed
+# The Guardian    its developer terms bar AI processing of its content; off pending review
+# Les Echos       feeds refuse automated requests (HTTP 403)
+# Yahoo Finance   public feed is days stale; no official news API
+# BLS             refuses automated requests (HTTP 403); jobs/CPI reach us via news coverage
+# BEA, EIA        robots.txt disallows their feeds
+# Fox Business    robots.txt disallows its feed
+# Nikkei Asia     feed carries no publication times, so dates can't be verified (re-checked 2026-10-01)
+# BofA, S&P       research terms prohibit AI input or storage without written permission
+#
+# Surveyed 2026-10-01 (the author's source survey of 2026-10-01); feeds that cannot be used:
+# Treasury, OFAC, FDIC   feeds exist only on public.govdelivery.com, whose robots.txt disallows all;
+#                        Treasury and the FDIC are read from their own index pages instead (2026-10-02)
+# NY Fed                 no feed; read from its news index page instead (2026-10-02)
+# Eurostat               the only feed is served by a search path its robots.txt disallows
+# IMF, OPEC, IEA         robots.txt itself answers 403 or a JavaScript challenge: unreachable means no
+# Axios, CNA             robots.txt disallows the feed path
+# Caixin Global          advertised feed answers HTTP 406; China Daily, swissinfo: no feed
+# NHK World              JSON only, stale since Sep 4
+# Nasdaq.com             feed is syndicated third-party content (dividend reminders, Motley Fool)
+# ABC News (US)          business feed is AP wire copy, but Disney's terms name "prompting"
+# Guardian, Telegraph, France 24, Al Jazeera   terms bar AI use of content; the Telegraph also
+#                        serves an anti-bot page to Reader's agent

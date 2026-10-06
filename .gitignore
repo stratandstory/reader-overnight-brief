@@ -1,0 +1,10 @@
+# Your key, your settings and your data: never commit or share
+.env
+config/local.toml
+data/
+briefs/*.md
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+.reader-share

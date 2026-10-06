@@ -1,0 +1,104 @@
+# Reader — overnight markets brief: settings
+#
+# Everything here is safe to edit. Model prices are USD per million tokens and are
+# used only for the budget arithmetic in each run report.
+
+[brief]
+timezone = "America/New_York"
+top_max = 5            # ceilings, not quotas: a quiet night gets a short brief
+second_max = 10
+developing_max = 5
+calendar_trading_days = 5
+# The editor's one-line "why it matters" per item. It is the only text in the brief that maps to no source.
+#   "off"       leave it out (default): the brief states only what its sources state
+#   "labelled"  print it on its own line, in italics, marked "Why it matters:"
+analysis = "off"
+# Where to put a copy of each finished brief: a flat folder (a synced drive, say), one file per brief,
+# named YYYY-MM-DD-reader-overnight-markets-brief.md with a provenance block on top naming `owner`.
+# Leave empty to write briefs/ only. A missing folder (drive not mounted) is reported, never fatal.
+# Both are personal: set them in config/local.toml, not here.
+workbench = ""
+owner = ""
+
+[sources]
+# Which sources this machine reads, by what each publisher's terms of use say (the `terms` field of each
+# entry in config/sources.toml). Personal: set it in config/local.toml with ./brief choose-sources.
+#   "official"      central banks, regulators and government only
+#   "unrestricted"  official sources, plus publishers whose terms have no clause against automated or AI use
+#   "all"           every source whose robots.txt allows Reader, terms notwithstanding
+# Left empty, the commands that fetch refuse to start until one is chosen.
+policy = ""
+off = []    # source ids to skip whatever the policy, for example ["bbc_business"]
+
+[window]
+# The brief covers everything published since the previous U.S. cash close.
+close_hour = 16
+max_lookback_hours = 100   # safety cap for long weekends
+# The morning package (./brief package, data/packages/<date>/): the window frozen at this time on a weekday,
+# whether or not a brief runs. ./brief run --package <date> writes that morning's brief later from it.
+package_time = "06:30"
+
+[budget]
+# Hard ceiling per brief. Stages scale down (fewer stories checked) before exceeding it.
+# Set high enough that a busy weekday never trims the checker: accuracy outranks cost here.
+max_run_usd = 4.00
+
+# --- Model assignment -------------------------------------------------------------
+# Drafting stages get a good model; the two verifying gates (check, audit) get the strongest,
+# and a gate never shares a model with the stage it verifies. The analyst (find) decides what
+# the stories are and nothing downstream re-examines that grouping, so it gets an Opus-class
+# model: on 2026-09-28 Opus 5.5 grouped a replayed morning correctly in 2 of 2 samples, Fable
+# 5.1 in 1 of 2 at three times the cost (`./brief replay-find`). The screen gets a real model
+# too: it is the one stage whose mistakes nothing downstream can see. The author's design record has the full reasoning.
+
+[models.screen]        # reads every overnight headline; keeps what could matter
+model = "claude-sonnet-5"
+effort = "low"
+max_tokens = 8000
+batch_size = 60
+
+[models.find]          # analyst: decides what the stories are, drafts narrow factual claims
+model = "claude-opus-5-5"
+effort = "high"
+max_tokens = 32000     # reasoning counts against this; 140 items ran to ~12k output on Sonnet
+max_items = 200          # raised from 140 on 2026-10-02 when nine news feeds were added; the analyst's cost scales with it
+group_threshold = 0.45   # headline-similarity grouping before the cap (reader/cluster.py): 0.45 made no wrong
+                         # merge on nine live runs, 0.35 made four, all on WSJ digest headlines
+group_size = 3           # most items of one development shown to the analyst, other owners first
+owner_floor = 2          # within a screen score, each owner's 2 newest items go first, in turns; then tier and
+                         # recency. Added 2026-10-05: ranking by tier alone kept all nine tier-2 owners out of the
+                         # 121 score-2 slots that morning (Bloomberg 107 of 200); with 2, 14 owners, Bloomberg 98
+
+[models.check]         # independent checker: confirms each claim against source text
+model = "claude-fable-5-1"
+effort = "medium"
+max_tokens = 12000
+max_stories = 25         # every story the analyst returns (it is told at most 25). Was 18 until 2026-10-05, when
+                         # the six left unchecked included Intesa's Monte dei Paschi bid and Basel III; about 6.5 cents a story
+concurrency = 4
+
+[models.write]         # editor: ranks and writes the brief from checked claims only
+model = "claude-sonnet-5"
+effort = "high"
+max_tokens = 32000     # reasoning counts; 16,000 was cut off mid-JSON on 2026-10-02 with 18 stories checked;
+                       # raised from 24,000 on 2026-10-05 when the checker's limit went to 25 stories
+
+[models.audit]         # final read: judges every line against the claims it cites
+model = "claude-fable-5-1"
+effort = "medium"
+max_tokens = 16000
+
+[prices]
+"claude-fable-5-1" = { input = 10.00, output = 50.00, cache_read = 0.25 }
+"claude-haiku-4-5" = { input = 1.00, output = 5.00 }
+"claude-sonnet-5" = { input = 2.00, output = 10.00 }
+"claude-opus-5" = { input = 5.00, output = 25.00 }
+"claude-opus-5-5" = { input = 4.00, output = 20.00 }
+"claude-opus-4-8" = { input = 5.00, output = 25.00 }
+
+[network]
+user_agent = "ReaderBrief/0.1 (personal morning news brief)"
+# SEC EDGAR only answers automated requests that carry a contact email.
+# Leave blank to skip SEC filings; add an address to enable them.
+contact_email = ""
+timeout_seconds = 20

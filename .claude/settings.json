@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./brief doctor)",
+      "Bash(./brief sources)",
+      "Bash(./brief collect)",
+      "Bash(./brief open)",
+      "Bash(./brief dry-run *)",
+      "Bash(./brief choose-sources *)",
+      "Bash(./brief package *)",
+      "Bash(./schedule.sh status)",
+      "Bash(./setup.sh)",
+      "Bash(./set-api-key.sh --clipboard)",
+      "Bash(.venv/bin/python -m unittest *)"
+    ],
+    "ask": [
+      "Bash(./brief run *)",
+      "Bash(./brief since *)",
+      "Bash(./brief replay-find *)",
+      "Bash(./brief eval-check *)",
+      "Bash(./schedule.sh on *)",
+      "Bash(./schedule.sh collect *)",
+      "Bash(./schedule.sh off *)"
+    ],
+    "deny": [
+      "Read(.env)",
+      "Edit(.env)",
+      "Bash(pbpaste *)",
+      "Bash(git push *)"
+    ]
+  }
+}

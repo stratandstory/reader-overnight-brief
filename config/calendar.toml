@@ -1,0 +1,134 @@
+# Reader — hand-entered release schedule
+#
+# BLS, BEA and TreasuryDirect refuse automated requests, but they publish their schedules
+# once a year. The dates below are typed in from those pages; code cites the page. Nothing
+# here is written by a model. Check each agency's schedule when a new year is posted
+# (BLS and BEA usually post the next year in December) and add the rows.
+#
+# Fields: date (YYYY-MM-DD), title, publisher, url (the schedule page the date came from).
+# Covered so far: October to December 2026, entered 2026-09-26.
+
+# ---------------------------------------------------------------- Bureau of Labor Statistics
+[[event]]
+date = 2026-10-02
+title = "Employment Situation (jobs report), September"
+publisher = "Bureau of Labor Statistics"
+url = "https://www.bls.gov/schedule/news_release/empsit.htm"
+
+[[event]]
+date = 2026-11-06
+title = "Employment Situation (jobs report), October"
+publisher = "Bureau of Labor Statistics"
+url = "https://www.bls.gov/schedule/news_release/empsit.htm"
+
+[[event]]
+date = 2026-12-04
+title = "Employment Situation (jobs report), November"
+publisher = "Bureau of Labor Statistics"
+url = "https://www.bls.gov/schedule/news_release/empsit.htm"
+
+[[event]]
+date = 2026-10-14
+title = "Consumer Price Index, September"
+publisher = "Bureau of Labor Statistics"
+url = "https://www.bls.gov/schedule/news_release/cpi.htm"
+
+[[event]]
+date = 2026-11-10
+title = "Consumer Price Index, October"
+publisher = "Bureau of Labor Statistics"
+url = "https://www.bls.gov/schedule/news_release/cpi.htm"
+
+[[event]]
+date = 2026-12-10
+title = "Consumer Price Index, November"
+publisher = "Bureau of Labor Statistics"
+url = "https://www.bls.gov/schedule/news_release/cpi.htm"
+
+[[event]]
+date = 2026-10-15
+title = "Producer Price Index, September"
+publisher = "Bureau of Labor Statistics"
+url = "https://www.bls.gov/schedule/news_release/ppi.htm"
+
+[[event]]
+date = 2026-11-13
+title = "Producer Price Index, October"
+publisher = "Bureau of Labor Statistics"
+url = "https://www.bls.gov/schedule/news_release/ppi.htm"
+
+[[event]]
+date = 2026-12-15
+title = "Producer Price Index, November"
+publisher = "Bureau of Labor Statistics"
+url = "https://www.bls.gov/schedule/news_release/ppi.htm"
+
+[[event]]
+date = 2026-11-03
+title = "JOLTS job openings, September"
+publisher = "Bureau of Labor Statistics"
+url = "https://www.bls.gov/schedule/news_release/jolts.htm"
+
+[[event]]
+date = 2026-12-01
+title = "JOLTS job openings, October"
+publisher = "Bureau of Labor Statistics"
+url = "https://www.bls.gov/schedule/news_release/jolts.htm"
+
+# ---------------------------------------------------------------- Bureau of Economic Analysis
+[[event]]
+date = 2026-10-29
+title = "GDP, third quarter (advance estimate)"
+publisher = "Bureau of Economic Analysis"
+url = "https://www.bea.gov/news/schedule"
+
+[[event]]
+date = 2026-10-29
+title = "Personal income and outlays (PCE inflation), September"
+publisher = "Bureau of Economic Analysis"
+url = "https://www.bea.gov/news/schedule"
+
+[[event]]
+date = 2026-11-25
+title = "GDP, third quarter (second estimate) and corporate profits"
+publisher = "Bureau of Economic Analysis"
+url = "https://www.bea.gov/news/schedule"
+
+[[event]]
+date = 2026-11-25
+title = "Personal income and outlays (PCE inflation), October"
+publisher = "Bureau of Economic Analysis"
+url = "https://www.bea.gov/news/schedule"
+
+[[event]]
+date = 2026-12-23
+title = "GDP, third quarter (third estimate)"
+publisher = "Bureau of Economic Analysis"
+url = "https://www.bea.gov/news/schedule"
+
+[[event]]
+date = 2026-12-23
+title = "Personal income and outlays (PCE inflation), November"
+publisher = "Bureau of Economic Analysis"
+url = "https://www.bea.gov/news/schedule"
+
+# ---------------------------------------------------------------- Federal Reserve
+# FOMC decisions come from the Fed's calendar page automatically. Minutes are released
+# three weeks after each meeting (Fed policy); these follow the 2026 meeting dates.
+[[event]]
+date = 2026-10-07
+title = "FOMC minutes (September meeting)"
+publisher = "Federal Reserve Board"
+url = "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
+
+[[event]]
+date = 2026-11-18
+title = "FOMC minutes (October meeting)"
+publisher = "Federal Reserve Board"
+url = "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
+
+[[event]]
+date = 2026-12-30
+title = "FOMC minutes (December meeting)"
+publisher = "Federal Reserve Board"
+url = "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"

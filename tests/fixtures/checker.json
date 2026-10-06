@@ -1,0 +1,96 @@
+[
+  {
+    "name": "Riyadh attack joined to the Saudi interceptions (facts from two sources joined as one event)",
+    "today": "Saturday, September 26, 2026",
+    "claim": "Saudi Arabia's capital came under renewed attack from Yemen's Houthis over the weekend, with Saudi-backed forces intercepting projectiles",
+    "documents": [
+      {
+        "publisher": "Bloomberg",
+        "section": "Politics",
+        "tier": 1,
+        "owner": "Bloomberg",
+        "published_utc": "2026-09-26T02:25:27+00:00",
+        "text": "Houthis Attack Riyadh Again as Trump Rejects Ceasefire Offer\nSaudi Arabia’s capital again came under attack from Yemen’s Houthis over the weekend as air raid alerts are issued on an almost daily basis in one or more areas of the kingdom."
+      },
+      {
+        "publisher": "CNBC",
+        "section": "Top News",
+        "tier": 2,
+        "owner": "NBCUniversal",
+        "published_utc": "2026-09-26T12:39:09+00:00",
+        "text": "Trump rejects Iran's conditional ceasefire proposal, WSJ reports, as Saudi coalition intercepts projectiles\nTrump expects renewed U.S. bombing of Iran after the midterm elections, The Wall Street Journal reports, as Saudi-backed forces intercept projectiles."
+      }
+    ],
+    "expect": [
+      "partial"
+    ],
+    "must_not_match": "Houthi[^.]*intercept|intercept[^.]*Houthi"
+  },
+  {
+    "name": "heading for its worst week (hedge dropped)",
+    "today": "Saturday, September 26, 2026",
+    "claim": "Long-term Treasury yields hit their highest since 2004 in the worst bond week since 2024",
+    "documents": [
+      {
+        "publisher": "Financial Times",
+        "section": "Markets",
+        "tier": 1,
+        "owner": "Nikkei",
+        "published_utc": "2026-09-25T20:24:38+00:00",
+        "text": "US bond sell-off pushes long-term yields to highest since 2004\nInvestors ‘don’t want to hold risk going into the weekend’, said one investor, as market heads for worst week since 2024"
+      }
+    ],
+    "expect": [
+      "partial"
+    ],
+    "must_match": "head(s|ing|ed) for|on track|on course|poised|set for"
+  },
+  {
+    "name": "10-year yield given the 30-year's record (subjects conflated across sources)",
+    "today": "Saturday, September 26, 2026",
+    "claim": "The 10-year Treasury yield rose to its highest level since 2004",
+    "documents": [
+      {
+        "publisher": "CNBC",
+        "section": "Top News",
+        "tier": 2,
+        "owner": "NBCUniversal",
+        "published_utc": "2026-09-26T13:30:06+00:00",
+        "text": "The 10-year Treasury yield is at its highest in nearly two decades. How we got here\nThe benchmark yield has climbed to a 19-year high, fueled by sticky inflation, heavy bond issuance and an AI-fueled investment boom."
+      },
+      {
+        "publisher": "Financial Times",
+        "section": "Markets",
+        "tier": 1,
+        "owner": "Nikkei",
+        "published_utc": "2026-09-25T20:24:38+00:00",
+        "text": "US bond sell-off pushes long-term yields to highest since 2004\nInvestors ‘don’t want to hold risk going into the weekend’, said one investor, as market heads for worst week since 2024"
+      }
+    ],
+    "expect": [
+      "partial",
+      "unsupported"
+    ],
+    "must_not_match": "10-year.{0,60}2004"
+  },
+  {
+    "name": "relative weekday resolved to a date",
+    "today": "Saturday, September 26, 2026",
+    "claim": "Trump's ban on Canadian alcohol is set to start Tuesday",
+    "documents": [
+      {
+        "publisher": "MarketWatch",
+        "section": "Bulletins",
+        "tier": 2,
+        "owner": "Dow Jones",
+        "published_utc": "2026-09-25T22:55:50+00:00",
+        "text": "Trump’s ban on Canadian alcohol starts Tuesday, but these brands will avoid it"
+      }
+    ],
+    "expect": [
+      "supported",
+      "partial"
+    ],
+    "must_match": "Sep(t(ember)?)?\\.? 29"
+  }
+]
