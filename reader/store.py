@@ -322,6 +322,13 @@ class Store:
             (run_id, iso(utcnow()), iso(window_start), iso(window_end)),
         )
 
+    def last_brief_end(self, after: datetime, before: datetime) -> datetime | None:
+        """The latest end of a finished brief's window between `after` and `before`: where that day's news stopped
+        reaching a brief. Comparison runs (./brief since) and dry runs never enter the runs table."""
+        rows = self._all("SELECT MAX(window_end_utc) AS end FROM runs WHERE status = 'ok' AND window_end_utc > ? "
+                         "AND window_end_utc < ?", (iso(after), iso(before)))
+        return parse_iso(rows[0]["end"]) if rows and rows[0]["end"] else None
+
     def finish_run(self, run_id: str, status: str, cost: float, brief_path: str | None, summary: str | None, stats: dict) -> None:
         self._exec(
             """UPDATE runs SET finished_utc = ?, status = ?, cost_usd = ?, brief_path = ?, summary = ?, stats = ?

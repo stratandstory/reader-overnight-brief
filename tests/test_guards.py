@@ -254,6 +254,31 @@ class EntityGuardTests(unittest.TestCase):
                                                "pressure, according to Bank of Japan Deputy Governor Shinichi Uchida."]), {"AI-driven"})
 
 
+    def test_a_place_and_its_adjective_are_one_name(self):
+        # Mon Oct 5, second brief: rejected "Yemeni", "Indian", "Spain's", "European", and the audit's "French"
+        from reader.guards import unsupported_entities
+        self.assertEqual(unsupported_entities("Saudi-backed Yemeni forces launched a campaign",
+                                              ["Saudi-Backed Yemen Forces Begin Bid to Retake Houthi Areas", "Saudi-backed forces"]), set())
+        self.assertEqual(unsupported_entities("Indian officials signaled an impasse", ["US, India Officials Signal Trade Deal Talks at an Impasse"]), set())
+        self.assertEqual(unsupported_entities("Spain's Sánchez called a snap election", ["Spanish Prime Minister Pedro Sánchez called an early election"]), set())
+        self.assertEqual(unsupported_entities("Euro hits low as French fiscal crisis weighs", ["The euro fell amid France's fiscal crisis"]), set())
+        # another name for a token must appear as a whole word: "Omani" is not found through "Oman" in "woman"
+        self.assertEqual(unsupported_entities("Exports of Omani crude rose", ["A woman said exports of crude rose"]), {"Omani"})
+        # an adjective the source never ties to the place is still caught
+        self.assertEqual(unsupported_entities("Chinese EV makers cut prices", ["EV makers cut prices"]), {"Chinese"})
+
+    def test_market_abbreviations_the_source_spells_out(self):
+        from reader.guards import unsupported_entities
+        self.assertEqual(unsupported_entities("Bini Smaghi urges a QT halt",
+                                              ["Lorenzo Bini Smaghi wrote that the ECB should halt quantitative tightening"]), set())
+        self.assertEqual(unsupported_entities("BOJ set to declare 2% inflation as JGB yields hit high",
+                                              ["The BOJ will declare underlying inflation has reached 2%", "Japan's long-term bond yields reached a fresh high"]), set())
+        # Tue Oct 6: the WSJ's headline said SCOTUS, and the climate-lawsuits story was lost on "Supreme Court"
+        self.assertEqual(unsupported_entities("The oil industry's bid to kill climate change lawsuits faced skepticism at the Supreme Court",
+                                              ["Oil Industry’s Bid to Kill Climate Change Lawsuits Faces SCOTUS Skepticism"]), set())
+        self.assertEqual(unsupported_entities("SCOTUS hears the case", ["The Supreme Court hears the case"]), set())
+
+
 class HedgeGuardTests(unittest.TestCase):
     def test_line_that_states_a_hedged_claim_as_done_is_caught(self):
         from reader.guards import dropped_hedges
@@ -278,6 +303,7 @@ class HedgeGuardTests(unittest.TestCase):
         self.assertEqual(hedges_in("Oil weighed on stocks"), set())
         self.assertEqual(hedges_in("Exxon weighs a bid"), {"weigh"})
         self.assertEqual(hedges_in("Profits are expected to rise"), {"expect"})
+        self.assertEqual(hedges_in("yields cross 6%, possibly within October"), {"possible"})
 
     def test_hedge_counts_only_for_the_fact_it_qualifies(self):
         # Mon Oct 5: the euro and Aramco headlines restated other claims of their items and were replaced with
@@ -343,3 +369,123 @@ class SingleSourceTagTests(unittest.TestCase):
         self.assertTrue(_single_source(item("reported")) and not _caveat(item("reported")))
         self.assertFalse(_single_source(item("confirmed", "reported")))
         self.assertTrue(_caveat(item("attributed")))  # caveat, so no tag on top of it
+
+
+class FallbackHeadlineTests(unittest.TestCase):
+    """When the writer's headline and the audit's correction both fail, the headline is built from the claims'
+    own wording. Until Mon Oct 5 that was the first claim cut at 14 words, and 7 of 20 headlines read that way."""
+
+    def headline(self, *claims):
+        from reader.stages.audit import _headline_from
+        from reader.stages.write import Line
+
+        class C:
+            def __init__(self, text, status="reported"):
+                self.text, self.status = text, status
+        return _headline_from(Line("x", [C(c) if isinstance(c, str) else c for c in claims]))
+
+    def test_short_claim_whole_without_its_attribution(self):
+        self.assertEqual(self.headline("C.H. Robinson agreed to buy truck broker RXO for around $5 billion in cash and stock, the WSJ reported."),
+                         "C.H. Robinson agreed to buy truck broker RXO for around $5 billion in cash and stock")
+
+    def test_long_claim_ends_at_its_first_clause(self):
+        self.assertEqual(self.headline("Strikes hit tankers in the Strait of Hormuz and oil infrastructure in Saudi Arabia even as the "
+                                       "region's exporters were getting more oil to market, the New York Times reported."),
+                         "Strikes hit tankers in the Strait of Hormuz and oil infrastructure in Saudi Arabia")
+        self.assertEqual(self.headline("Shares rose as much as 5% after the company raised its forecast and announced a buyback of up to "
+                                       "$2 billion over three years, Bloomberg reported."), "Shares rose as much as 5%")
+
+    def test_checker_dates_after_a_weekday_are_left_to_the_sentences(self):
+        self.assertEqual(self.headline("The Trump administration is set to return to court on Wednesday, September 30, to defend its power "
+                                       "to wage a global trade war, the third time in less than two years, the New York Times reported."),
+                         "The Trump administration is set to return to court on Wednesday to defend its power to wage a global trade war")
+
+    def test_unconfirmed_claim_keeps_its_attribution(self):
+        text = "The US is reportedly sending a third carrier group to the Middle East, CNBC reported."
+        claim = type("C", (), {"text": text, "status": "attributed"})()
+        self.assertEqual(self.headline(claim), text.rstrip("."))
+
+    def test_an_aside_is_never_a_headline_and_the_last_resort_does_not_end_on_a_function_word(self):
+        self.assertEqual(self.headline("Schneider Electric, the French group, agreed to buy PTC for $22.6 billion in a deal that would "
+                                       "create one of the largest industrial software portfolios in the world."),
+                         "Schneider Electric, the French group, agreed to buy PTC for $22.6 billion…")
+
+
+class DevelopingPlacementTests(unittest.TestCase):
+    def test_reported_news_filed_under_developing_moves_to_further_items(self):
+        # Mon Oct 5, second brief: all five Developing items, headed "not yet confirmed", carried reported claims,
+        # among them Bolsonaro's first-round lead (Bloomberg, WSJ, FT)
+        from reader.config import load_settings
+        from reader.stages.check import CheckedStory, VerifiedClaim
+        from reader.stages.find import Story
+        from reader.stages.write import Item, Sentence, WriteOut, place
+
+        def story(key, status):
+            st = Story(key=key, title=key, continues=None, category="markets", region="global", audiences=["trading"],
+                       materiality=2, why_it_matters="")
+            vc = VerifiedClaim(id=f"V{key[1:]}", story_key=key, text=f"Claim of {key}.", kind="event", status=status,
+                               basis="reported", evidence=[], quotes=[], event_date=None, original="")
+            return CheckedStory(st, [vc])
+
+        def item(key):
+            return Item(story=key, headline=f"Headline {key}", headline_claims=[f"V{key[1:]}"],
+                        what_changed=[Sentence(text=f"Claim of {key}.", claims=[f"V{key[1:]}"])], why_it_matters="",
+                        audiences=["trading"])
+
+        stories = [story("T1", "reported"), story("T2", "attributed"), story("T3", "confirmed")]
+        out = WriteOut(summary="s", summary_claims=["V1"], top=[], second=[], developing=[item("T1"), item("T2"), item("T3")], session=[],
+                       calendar=[])
+        brief = place(out, stories, [], load_settings())
+        self.assertEqual([i.story_key for i in brief.developing], ["T2"])
+        self.assertEqual([i.story_key for i in brief.second], ["T1", "T3"])
+        self.assertTrue(any("out of Developing" in n for n in brief.notes))
+
+
+
+class AttributionTests(unittest.TestCase):
+    """A sentence resting on an unconfirmed report must name the outlet, and code adds it when the text doesn't.
+    The added name must be true of everything it covers."""
+
+    def claim(self, text, status, *publishers):
+        from reader.stages.check import VerifiedClaim
+        evidence = [Evidence("i1", p, "s", 1, p, "news", "https://x", "2026-10-06T00:00:00+00:00", "t", "t", "", True)
+                    for p in publishers]
+        return VerifiedClaim(id="V1", story_key="T1", text=text, kind="report", status=status, basis="reported",
+                             evidence=evidence, quotes=[], event_date=None, original=text)
+
+    def attribute(self, text, *claims):
+        from reader.stages.audit import _attribute
+        from reader.stages.write import Line
+        return _attribute(text, Line(text, list(claims)))
+
+    def test_a_prefix_never_covers_a_claim_another_outlet_reported(self):
+        # Tue Oct 6, the Saudi item: "Bloomberg reports:" was put over the WSJ's Houthi airport strikes
+        strikes = self.claim("Yemen's Houthi rebels struck two airports in Saudi Arabia, the WSJ reported.", "reported",
+                             "The Wall Street Journal")
+        tankers = self.claim("The U.S. blockade of Iran is keeping dozens of laden tankers bottled up along the nation's coast, "
+                             "according to United Against Nuclear Iran.", "attributed", "Bloomberg")
+        text, how = self.attribute("Houthi rebels struck two airports in Saudi Arabia, the WSJ reported, while a U.S. blockade is "
+                                   "keeping dozens of laden tankers bottled up along Iran's coast, according to United Against "
+                                   "Nuclear Iran.", strikes, tankers)
+        self.assertEqual(how, "split")
+        self.assertEqual(text, "Yemen's Houthi rebels struck two airports in Saudi Arabia, the WSJ reported. Bloomberg reports: "
+                               "The U.S. blockade of Iran is keeping dozens of laden tankers bottled up along the nation's coast, "
+                               "according to United Against Nuclear Iran.")
+
+    def test_a_prefix_is_kept_when_every_claim_rests_on_the_outlet(self):
+        rosengren = self.claim("Former Boston Fed President Eric Rosengren said the Fed is likely to wait until its final meeting "
+                               "of the year.", "attributed", "Bloomberg")
+        text, how = self.attribute("Rosengren said the Fed is likely to wait until its final meeting of the year.", rosengren)
+        self.assertEqual((text, how), ("Bloomberg reports: Rosengren said the Fed is likely to wait until its final meeting "
+                                       "of the year.", "prefixed"))
+        both = self.claim("Moonshot AI closed its final private round at about $50 billion, people familiar said.",
+                          "attributed", "Bloomberg", "Euronews")
+        self.assertEqual(self.attribute("Moonshot AI closed its final private round at about $50 billion.", both)[0],
+                         "Bloomberg and Euronews report: Moonshot AI closed its final private round at about $50 billion.")
+
+    def test_an_outlet_is_named_only_as_a_whole_word(self):
+        # "FT" was found inside "after", so an FT-sourced report went out unattributed
+        talks = self.claim("McKesson is nearing a deal for Option Care, people familiar said.", "attributed", "Financial Times")
+        self.assertEqual(self.attribute("McKesson is nearing a deal for Option Care after weeks of talks.", talks)[1], "prefixed")
+        self.assertEqual(self.attribute("McKesson is nearing a deal for Option Care, the FT reported.", talks), (
+            "McKesson is nearing a deal for Option Care, the FT reported.", None))

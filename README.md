@@ -4,15 +4,22 @@ Reader goes through the overnight news on your Mac and writes a short brief for 
 
 It is built to say less rather than say something unsupported. On a quiet night the brief is short.
 
-![How Reader works: feeds are collected overnight, screened, grouped into stories, checked against their sources, written up and audited before the brief is saved](docs/images/how-it-works.svg)
+![How Reader works: feeds are collected every 30 minutes, screened, grouped into stories, checked against their sources, written up and audited before the brief is saved](docs/images/how-it-works.svg)
 
-## Is it for you?
+## Requirements
 
-You need three things:
+| | |
+|---|---|
+| **Platform** | macOS. Setup, scheduling (launchd) and notifications use macOS's own tools. The pipeline itself is Python 3.11 or newer with three dependencies; other platforms are untested and unsupported. |
+| **Host** | A Mac that stays awake and online through the week: a desktop Mac or Mac mini, or a MacBook kept on power with automatic sleep turned off. [Why](docs/guide/01-before-you-start.md#why-collection-runs-continuously) |
+| **Resources** | Light, because the models run on Anthropic's servers. On the reference Mac a collection pass takes about 35 seconds, mostly network wait, with 2 seconds of CPU and 65 MB of memory; a cost estimate, which does all of a brief's local work except the model calls, peaks at about 110 MB. Disk: about 50 MB for Reader's Python environment, plus 1.5 to 2 MB of stored news a day. |
+| **Network** | Outbound HTTPS only: each source's feed and its robots.txt every 30 minutes, and Anthropic's API while a brief is written. Nothing listens for incoming connections. |
+| **Anthropic API** | An account with prepaid credit. A weekday brief costs about $2.50 to $3.50 and a quiet weekend morning about $1.50; a month of weekday briefs, about $55 to $75. Each run stops at a $4 ceiling, and you can set a monthly spending limit. |
+| **Setup** | About an hour, and no programming. Claude Code can run the setup with you (it needs a paid Claude plan), or follow the Terminal guide. Every step is written out, with pictures. |
 
-1. **A Mac that can stay on overnight**, plugged in and online. Reader checks the feeds every 30 minutes so nothing scrolls past before morning. Windows is not supported.
-2. **An Anthropic API account with credit.** Reader pays Anthropic for the AI it uses: about **$1.50 to $3 a brief**, or roughly **$50 to $65 for a month of weekday briefs**. You can cap your spending.
-3. **About an hour for setup**, the first time. You don't need to know how to code. Every step is written out, with pictures of what you should see.
+**Reference configuration.** Developed and run on a MacBook Air (Apple M2, 16 GB memory), macOS 15 Sequoia, Python 3.14, with the collector scheduled every 30 minutes since September 26, 2026.
+
+**How it runs.** Reader is a set of scheduled background jobs, not a service. It checks every source every 30 minutes and writes the brief at 6:30 AM New York time, Monday to Friday. Many feeds list only their latest 20 or so items, so a complete brief depends on collection running across the whole span the brief covers: the previous trading day from that morning's brief, through the 4 PM close and the night that follows. If the Mac sleeps, Reader detects the checks it missed and lists them in the run report, and the brief still runs on what was collected.
 
 ## Two ways to set it up
 
@@ -24,13 +31,13 @@ You need three things:
 
 Whichever you choose, start with the first two guides.
 
-![The setup path: check your Mac, create an Anthropic account and key, get Reader, run setup, choose sources, write a first brief, then schedule it](docs/images/setup-roadmap.svg)
+![The setup path: check the requirements, create an Anthropic account and key, get Reader, run setup, choose sources, write a first brief, then schedule it](docs/images/setup-roadmap.svg)
 
 ## The guides
 
 | | Guide | Time |
 |---|---|---|
-| 1 | [Before you start](docs/guide/01-before-you-start.md): what you need, what it costs, where Reader should live | 5 min |
+| 1 | [Before you start](docs/guide/01-before-you-start.md): requirements, costs, choosing the Mac, where Reader should live | 5 min |
 | 2 | [Your Anthropic API key](docs/guide/02-api-key.md): account, credit, a spending cap, the key | 15 min |
 | 3 | [Set up with Claude Code](docs/guide/03-setup-with-claude-code.md) | 30 min |
 | 4 | [Set up in Terminal](docs/guide/04-setup-in-terminal.md) (instead of 3) | 30 min |

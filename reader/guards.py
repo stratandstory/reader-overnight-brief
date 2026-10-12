@@ -88,10 +88,55 @@ _ENTITY_ALIASES: dict[str, tuple[str, ...]] = {
     "ice": ("immigration and customs enforcement", "immigration"), "doj": ("justice department",),
     "ftc": ("federal trade commission",), "opec": ("petroleum exporting",), "ai": ("artificial intelligence",),
     "rba": ("reserve bank of australia", "australia's central bank"), "g7": ("group of seven",),
-    "china": ("chinese",), "chinese": ("china",),
+    "qt": ("quantitative tightening",),
+    "jgb": ("japanese government bond", "japan government bond", "japanese bond", "japan's bond", "japan's long-term bond"),
+    "jgbs": ("japanese government bond", "japan government bond", "japanese bond", "japan's bond", "japan's long-term bond"),
     "treasury": ("treasuries",), "treasuries": ("treasury",), "nasdaq": ("nasdaq",),
     "trump": ("president",), "xi": ("xi",),
+    # the WSJ headline said "SCOTUS" where the claim said "Supreme Court" (Tue Oct 6: the climate-lawsuits story lost)
+    "scotus": ("supreme court",), "supreme": ("scotus",), "court": ("scotus",),
 }
+
+# A place and the adjective for it are the same name to a reader: "Yemeni forces" against "Yemen forces",
+# "French yields" against "France's yields" (Mon Oct 5: four claims and lines rejected on such pairs).
+_NATIONALITIES = """afghanistan afghan; africa african; albania albanian; algeria algerian; america american;
+argentina argentine argentinian; armenia armenian; asia asian; australia australian; austria austrian;
+azerbaijan azerbaijani; bahrain bahraini; bangladesh bangladeshi; belarus belarusian; belgium belgian;
+bolivia bolivian; brazil brazilian; britain british; bulgaria bulgarian; cambodia cambodian; canada canadian;
+chile chilean; china chinese; colombia colombian; croatia croatian; cuba cuban; cyprus cypriot; czechia czech;
+denmark danish; ecuador ecuadorian; egypt egyptian; england english; estonia estonian; ethiopia ethiopian;
+europe european; finland finnish; france french; georgia georgian; germany german; ghana ghanaian; greece greek;
+hungary hungarian; iceland icelandic; india indian; indonesia indonesian; iran iranian; iraq iraqi; ireland irish;
+israel israeli; italy italian; japan japanese; jordan jordanian; kazakhstan kazakh; kenya kenyan; korea korean;
+kuwait kuwaiti; latvia latvian; lebanon lebanese; libya libyan; lithuania lithuanian; malaysia malaysian;
+mexico mexican; mongolia mongolian; morocco moroccan; netherlands dutch; nigeria nigerian; norway norwegian;
+oman omani; pakistan pakistani; palestine palestinian; panama panamanian; peru peruvian; philippines philippine filipino;
+poland polish; portugal portuguese; qatar qatari; romania romanian; russia russian; saudi arabia saudi;
+scotland scottish; serbia serbian; singapore singaporean; slovakia slovak; slovenia slovenian; spain spanish;
+sri lanka sri lankan; sudan sudanese; sweden swedish; switzerland swiss; syria syrian; taiwan taiwanese;
+thailand thai; tunisia tunisian; turkey turkish; ukraine ukrainian; emirates emirati; uruguay uruguayan;
+uzbekistan uzbek; venezuela venezuelan; vietnam vietnamese; wales welsh; yemen yemeni; zambia zambian;
+zimbabwe zimbabwean"""
+
+
+def _nationality_aliases() -> dict[str, tuple[str, ...]]:
+    out: dict[str, set[str]] = {}
+    for entry in _NATIONALITIES.replace("\n", " ").split(";"):
+        words = entry.split()
+        # multi-word places: "saudi arabia saudi", "sri lanka sri lankan"
+        if words[:2] == ["saudi", "arabia"]:
+            forms = ["saudi arabia", "saudi"]
+        elif words[:2] == ["sri", "lanka"]:
+            forms = ["sri lanka", "sri lankan"]
+        else:
+            forms = words
+        for f in forms:
+            out.setdefault(f.split()[-1], set()).update(x for x in forms if x != f)
+    return {k: tuple(sorted(v)) for k, v in out.items()}
+
+
+for _k, _v in _nationality_aliases().items():
+    _ENTITY_ALIASES[_k] = tuple(dict.fromkeys(_ENTITY_ALIASES.get(_k, ()) + _v))
 
 # Titles, function words and other capitalised words that are not names.
 _NOT_ENTITIES = set("""a an the and or but nor as at by for from in into of off on onto over to under up with
@@ -127,15 +172,28 @@ def _loose(s: str, hyphen: str = " ") -> str:
     return _WS.sub(" ", s.replace(".", "").replace("-", hyphen)).strip()
 
 
-def _entity_forms(token: str) -> list[str]:
+def _entity_forms(token: str) -> tuple[list[str], list[str]]:
+    """The token's own forms (singular and plural), and the other names for it (aliases)."""
     base = normalize(token).rstrip(".").removesuffix("'s").removesuffix("’s")
     forms = [base]
     if base.endswith("s"):
         forms.append(base[:-1])
     else:
         forms.append(base + "s")
-    forms.extend(_ENTITY_ALIASES.get(base, ()) or _ENTITY_ALIASES.get(_loose(base), ()))
-    return [f for f in forms if len(f) >= 2]
+    aliases = _ENTITY_ALIASES.get(base, ()) or _ENTITY_ALIASES.get(_loose(base), ())
+    return [f for f in forms if len(f) >= 2], [a for a in aliases if len(a) >= 2]
+
+
+def _alias_found(alias: str, haystack: str, loose_haystacks: tuple[str, str]) -> bool:
+    """Another name for the token, as whole words with an optional plural or possessive: "Omani" is not
+    found through "Oman" in "woman". (The token's own spelling still matches inside a longer word, as before.)"""
+    if re.search(rf"(?<!\w){re.escape(alias)}(?:s|'s)?(?!\w)", haystack):
+        return True
+    for hyphen, loose_haystack in zip((" ", ""), loose_haystacks):
+        la = _loose(alias, hyphen)
+        if len(la) >= 2 and re.search(rf"(?<!\w){re.escape(la)}s?(?!\w)", loose_haystack):
+            return True
+    return False
 
 
 def _name_found(form: str, haystack: str, loose_haystacks: tuple[str, str]) -> bool:
@@ -185,7 +243,9 @@ def unsupported_entities(text: str, support: list[str]) -> set[str]:
     loose_haystacks = (_loose(haystack), _loose(haystack, ""))
     bad: set[str] = set()
     for tok in entities_in(text):
-        if not any(_name_found(f, haystack, loose_haystacks) for f in _entity_forms(tok)):
+        forms, aliases = _entity_forms(tok)
+        if not (any(_name_found(f, haystack, loose_haystacks) for f in forms)
+                or any(_alias_found(a, haystack, loose_haystacks) for a in aliases)):
             bad.add(tok)
     return bad
 
@@ -209,7 +269,7 @@ _HEDGES: tuple[tuple[str, re.Pattern], ...] = tuple((label, _word(p)) for label,
     ("weigh", r"weigh(?:s|ed|ing)?(?! (?:on|down)\b)"), ("reportedly", "reportedly"),
     ("likely", "(?:un)?likely"), ("potential", "potential(?:ly)?"), ("propos", "propos(?:e|es|ed|ing|al|als)"),
     ("seek", "seek(?:s|ing)?|sought"), ("aim", "aim(?:s|ed|ing)?"), ("intend", "intend(?:s|ed|ing)?"),
-    ("hope", "hop(?:e|es|ed|ing)"),
+    ("hope", "hop(?:e|es|ed|ing)"), ("possible", "possibl(?:e|y)"),
 ))
 
 # A hedge qualifies the words near it in its own clause, not every fact in the claim or the item: a line

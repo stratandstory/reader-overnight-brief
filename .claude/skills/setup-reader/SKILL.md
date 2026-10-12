@@ -11,12 +11,12 @@ Go one step at a time. Before each step, say what it does and whether it costs a
 
 ## 0. Say what's ahead
 
-In a few lines: about nine steps, about 30 minutes. Only the first brief costs money, about $1.50 to $3, and you'll ask before it. They'll need the Claude Console open in their browser with credit added (`docs/guide/02-api-key.md`); if they haven't done that yet, you'll walk them through it when you get there. Ask whether they're ready.
+In a few lines: about nine steps, about 30 minutes. Only the first brief costs money, about $1.50 to $3.50, and you'll ask before it. They'll need the Claude Console open in their browser with credit added (`docs/guide/02-api-key.md`); if they haven't done that yet, you'll walk them through it when you get there. Ask whether they're ready.
 
 ## 1. The folder and the Mac
 
 - Run `pwd`. Reader should be directly in the home folder (`$HOME/Reader`). If it's inside Desktop, Documents, Downloads, iCloud Drive or another synced folder, explain why that breaks the overnight schedule (`docs/guide/01-before-you-start.md`, "Where Reader should live"), and ask them to move it into their home folder in Finder, then start a new Claude Code session in the moved folder. Don't move it yourself: this session would lose its folder.
-- Run `sw_vers -productVersion` and mention the macOS version.
+- Run `sw_vers -productVersion` and mention the macOS version. Any Mac running a current macOS has ample headroom (`docs/guide/01-before-you-start.md`, "Reference configuration"). Ask whether it's a desktop Mac or a MacBook: a MacBook needs to stay on power with the lid open for the schedule to keep collecting, which matters in step 9.
 - Run `ls -l brief setup.sh schedule.sh set-api-key.sh`. If any lacks the `x` permission, run `chmod +x brief *.sh` and say why (the download dropped the "this is a program" mark).
 
 ## 2. Python
@@ -75,15 +75,15 @@ Run `./brief collect` (free, about a minute), then `./brief sources`. Summarise:
 3. Run `./brief run` in the background. When it finishes, report the brief's file name, the number of stories, claims checked and passed, and the exact cost. If it stopped, say at which stage and why, from the output or the run report.
 4. Run `./brief open`, and offer to walk them through how to read it (`docs/guide/06-every-morning.md`, "Reading the brief").
 
-## 9. Overnight (optional)
+## 9. Running on a schedule (optional)
 
 Explain the choice (`docs/guide/06-every-morning.md`, "Run it automatically"):
 
 - `./schedule.sh collect`: collects every 30 minutes and saves each weekday morning's news at 6:30 AM; they run the brief when they want one. Free.
-- `./schedule.sh on`: the same, plus the brief at 6:30 AM on weekdays with a notification. About $50 to $65 a month: needs a clear yes.
+- `./schedule.sh on`: the same, plus the brief at 6:30 AM on weekdays with a notification. About $55 to $75 a month: needs a clear yes.
 - Neither: they run `./brief run` by hand. The brief is thinner, because feeds only show their latest items.
 
-Run the one they choose, then `./schedule.sh status`. Then guide them through keeping the Mac awake (`docs/guide/06-every-morning.md`, "Keep the Mac awake overnight"): System Settings, search "sleep", turn on the option that prevents automatic sleeping when the display is off; on a laptop it's under Battery → Options and needs the power adapter and an open lid. They make this change, not you. You may check the result read-only with `pmset -g | grep -E '^ *sleep'` (0 means the Mac won't sleep on its own).
+Run the one they choose, then `./schedule.sh status`. Then guide them through keeping the Mac awake (`docs/guide/06-every-morning.md`, "Keep the Mac awake"): System Settings, search "sleep", turn on the option that prevents automatic sleeping when the display is off; on a MacBook it's under Battery → Options and needs the power adapter and an open lid. They make this change, not you. You may check the result read-only with `pmset -g | grep -E '^ *sleep'` (0 means the Mac won't sleep on its own).
 
 ## Finish
 

@@ -17,7 +17,9 @@ from datetime import date, datetime, time, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from . import session as session_mod
 from .config import DATA_DIR, Settings
+from .stages.common import Window
 from .store import Store, iso, parse_iso
 from .timewindow import fmt_day, fmt_time, overnight_window
 
@@ -56,8 +58,13 @@ def make_package(settings: Settings, store: Store, day: date, now: datetime,
                for sid, row in last.items() if sid in labels]
     gaps = [{"source_id": g["source_id"], "label": labels[g["source_id"]].label if g["source_id"] in labels else g["source_id"],
              "fetched_utc": g["fetched_utc"]} for g in store.gaps_between(start, end)]
+    # the previous trading day's news no brief covered (reader/session.py), frozen with the window
+    session = session_mod.bounds(settings, store, Window(start, end, settings.tz))
     data = {"day": day.isoformat(), "window_start": iso(start), "window_end": iso(end), "packaged_utc": iso(now),
-            "items": items, "sources": sources, "gaps": gaps}
+            "items": items, "sources": sources, "gaps": gaps,
+            "session": ({"start": iso(session.start), "end": iso(session.end), "after_brief": session.after_brief}
+                        if session else None),
+            "session_items": session_mod.items(store, session) if session else []}
     folder.mkdir(parents=True, exist_ok=True)
     order = list(dict.fromkeys(s.publisher for s in settings.sources))
     (folder / "headlines.md").write_text(render_headlines(data, settings.tz, order))
@@ -82,10 +89,14 @@ def gap_lines(data: dict, tz: str) -> list[str]:
 
 
 def unavailable(data: dict) -> list[str]:
-    """Publishers none of whose feeds answered at their last check before the window's end."""
+    """Publishers none of whose feeds answered at their last check before the window's end. Only checks inside
+    the window count: a source switched off weeks ago keeps its last failure in the package, but it was not
+    tried that morning (Tue Oct 6: Business Wire, CFPB and GlobeNewswire printed as "not reachable")."""
+    start = data["window_start"]
+    start = parse_iso(start) if isinstance(start, str) else start
     by_pub: dict[str, list[bool]] = {}
     for s in data["sources"]:
-        if s["kind"] == "calendar":
+        if s["kind"] == "calendar" or parse_iso(s["fetched_utc"]) < start:
             continue
         by_pub.setdefault(s["publisher"], []).append(s["status"] == "ok")
     return sorted(p for p, oks in by_pub.items() if not any(oks))
@@ -104,6 +115,10 @@ def render_headlines(data: dict, tz: str, order: list[str] | None = None) -> str
            f"Everything collected from {fmt_time(start, tz, end)} to {fmt_time(end, tz)} (New York): "
            f"{len(items)} items from {len(publishers)} publishers. Headlines and summaries are the publishers' own, "
            f"as last collected by {fmt_time(packaged, tz, end)}. No model has read or written any of this list.", ""]
+    if data.get("session_items"):
+        s_start, s_end = parse_iso(data["session"]["start"]), parse_iso(data["session"]["end"])
+        out += [f"Also frozen for the brief's section on the previous trading day: {len(data['session_items'])} items "
+                f"published from {fmt_time(s_start, tz, end)} to the {fmt_time(s_end, tz)} close, listed in package.json.", ""]
     if data["gaps"]:
         out += ["Possible gaps (a feed turned over completely between two checks; items in between may be missing):", ""]
         out += [f"- {g}" for g in gap_lines(data, tz)] + [""]

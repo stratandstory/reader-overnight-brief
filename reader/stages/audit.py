@@ -86,25 +86,103 @@ def _claims_wording(line: Line) -> str:
     return " ".join(c.text.rstrip(".") + "." for c in line.claims)
 
 
+_HEADLINE_WORDS = 22
+# "…, the WSJ reported." / "…, Bloomberg and The Straits Times reported." Struck from a headline built from a
+# reported or confirmed claim (the item's sentences and links carry the attribution); kept for an unconfirmed one.
+_TRAILING_ATTRIBUTION = re.compile(r",\s+(?:the\s+)?(?:(?:[A-Z][\w.&'’-]*|and)\s+){1,6}(?:reported|reports)\.?$")
+# Where a claim can end early and still say something whole: a comma (not one before a year), a semicolon,
+# or a conjunction that starts a second fact.
+_CLAUSE_BREAK = re.compile(r",\s(?!\d{4}\b)|;\s|\s(?:even as|amid|after|while|despite|following|because|as)\s")
+# The checker writes resolved dates into claims ("on Wednesday, September 30, to defend"); a headline keeps the weekday.
+_MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December"
+_WEEKDAY_DATE = re.compile(rf"\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday), (?:{_MONTHS}) \d{{1,2}}(?:, \d{{4}})?,?")
+_AS_PHRASE = set("much many well high low long far soon large little early late such known same so just twice "
+                 "quickly good big".split())
+
+
+def _first_clause(text: str) -> str | None:
+    """The claim up to its first clean clause break, if that leaves five to twenty words. Skips "as" inside
+    "as much as" and the like, and a break that would end on a short aside ("Schneider, the French group")."""
+    for m in _CLAUSE_BREAK.finditer(text):
+        head = text[:m.start()].rstrip(" ,;")
+        if m.group(0).strip() == "as":
+            before = head.split()[-1:] or [""]
+            after = text[m.end():].split()[:1] or [""]
+            if before[0].lower() in _AS_PHRASE or after[0].lower() in _AS_PHRASE:
+                continue
+        words = head.split()
+        if len(words) < 5:
+            continue
+        segments = re.split(r",\s(?!\d{4}\b)", head)
+        if len(segments) > 1 and len(segments[-1].split()) < 4:
+            continue
+        return head if len(words) <= _HEADLINE_WORDS else None
+    return None
+
+
 def _headline_from(line: Line) -> str:
-    words = line.claims[0].text.rstrip(".").split() if line.claims else ["Update"]
-    return " ".join(words[:14]) + ("…" if len(words) > 14 else "")
+    """A headline in the claims' own words, for when the writer's and the audit's both fail: the first claim
+    that is short enough whole, or that ends cleanly at a clause break; a cut with an ellipsis only if none does."""
+    if not line.claims:
+        return "Update"
+    texts = []
+    for c in line.claims:
+        t = c.text.strip().rstrip(".")
+        if c.status in ("reported", "confirmed"):
+            t = _TRAILING_ATTRIBUTION.sub("", t + ".").rstrip(".")
+        texts.append(_WEEKDAY_DATE.sub(r"\1", t))
+    for t in texts:
+        if len(t.split()) <= _HEADLINE_WORDS:
+            return t
+        clause = _first_clause(t)
+        if clause:
+            return clause
+    words = texts[0].split()[:14]
+    while len(words) > 5 and words[-1].lower() in ("the", "a", "an", "of", "for", "and", "to", "in", "with", "on", "by", "at"):
+        words.pop()
+    return " ".join(words) + "…"
 
 
-def _outlets(line: Line) -> list[str]:
-    unconfirmed = [c for c in line.claims if c.status in ("attributed", "developing")]
-    return sorted({e.publisher for c in unconfirmed for e in c.evidence if e.tier > 0})
+def _claim_outlets(claim) -> list[str]:
+    """The outlets (not primary sources) behind an unconfirmed claim: a sentence resting on it must name one."""
+    if claim.status not in ("attributed", "developing"):
+        return []
+    return sorted({e.publisher for e in claim.evidence if e.tier > 0})
 
 
 def _names_outlet(text: str, outlets: list[str]) -> bool:
-    lowered = text.lower()
+    """Whether `text` names one of `outlets`, as whole words: "FT" is not found in "after"."""
     for pub in outlets:
         names = {pub, short(pub), pub.replace("The ", "")}
         if pub == "The Wall Street Journal":
             names.add("the Journal")
-        if any(n.lower() in lowered for n in names):
+        if any(re.search(rf"(?<!\w){re.escape(n)}(?!\w)", text, re.I) for n in names):
             return True
     return False
+
+
+def _with_outlets(text: str, outlets: list[str]) -> str:
+    verb = "report" if len(outlets) > 1 else "reports"
+    return f"{' and '.join(short(o) for o in outlets)} {verb}: {text}"
+
+
+def _attribute(text: str, line: Line) -> tuple[str, str | None]:
+    """The sentence with every unconfirmed claim's outlet named, and how: None (already named), "prefixed" or
+    "split". A prefix covers the whole sentence, so it is used only when every claim in the sentence rests on
+    the outlets it names. Otherwise the sentence falls back to its claims' own wording, one sentence per claim,
+    each naming its own outlets: "Bloomberg reports:" must never sit over a claim only the WSJ reported (Tue Oct 6)."""
+    unnamed = [c for c in line.claims if _claim_outlets(c) and not _names_outlet(text, _claim_outlets(c))]
+    if not unnamed:
+        return text, None
+    outlets = sorted({o for c in unnamed for o in _claim_outlets(c)})
+    if all(set(outlets) <= {e.publisher for e in c.evidence} for c in line.claims):
+        return _with_outlets(text, outlets), "prefixed"
+    parts = []
+    for c in line.claims:
+        own = c.text.rstrip(".") + "."
+        need = _claim_outlets(c)
+        parts.append(_with_outlets(own, need) if need and not _names_outlet(own, need) else own)
+    return " ".join(parts), "split"
 
 
 def audit(llm: LLM, settings: Settings, brief: Brief) -> list[str]:
@@ -176,12 +254,13 @@ def audit(llm: LLM, settings: Settings, brief: Brief) -> list[str]:
             text = apply(f"{ref}.s{k}", s, f"a sentence in {name}", _claims_wording(s), True)
             if text is None:
                 continue
-            outlets = _outlets(s)
-            if outlets and not _names_outlet(text, outlets):
-                verb = "report" if len(outlets) > 1 else "reports"
-                text = f"{' and '.join(short(o) for o in outlets)} {verb}: {text}"
+            attributed, how = _attribute(text, s)
+            if how == "prefixed":
                 notes.append(f"Added attribution to a sentence in {name}")
-            s.text = text
+            elif how == "split":
+                notes.append(f"A sentence in {name} rests on different outlets for different claims; each claim "
+                             f"now names its own (was: {text})")
+            s.text = attributed
             kept.append(s)
         it.sentences = kept
         if it.why_it_matters:
@@ -195,6 +274,7 @@ def audit(llm: LLM, settings: Settings, brief: Brief) -> list[str]:
     brief.top = [i for i in brief.top if i.section != "dropped"]
     brief.second = [i for i in brief.second if i.section != "dropped"]
     brief.developing = [i for i in brief.developing if i.section != "dropped"]
+    brief.session = [i for i in brief.session if i.section != "dropped"]
 
     lead = next(iter(brief.items()), None)
     lead_sentence = lead.sentences[0].text if lead else "Nothing material passed the evidence check this morning."

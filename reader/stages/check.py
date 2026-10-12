@@ -169,11 +169,11 @@ def claim_text(v: Verdict, original: str) -> str:
 
 
 def check(llm: LLM, settings: Settings, stories: list[Story], items_by_id: dict[str, dict], fetcher: Fetcher,
-          reserve: float, today: str | None = None) -> tuple[list[CheckedStory], list[str]]:
+          reserve: float, today: str | None = None, limit: int | None = None) -> tuple[list[CheckedStory], list[str]]:
     """`today` is the brief's own date ("Thursday, October 1, 2026"); it defaults to the current date, and a
     brief written late passes its morning's, so the checker resolves "Thursday" the way the morning would."""
     cfg = settings.stage("check")
-    limit = int(cfg.extra.get("max_stories", 18))
+    limit = limit if limit is not None else int(cfg.extra.get("max_stories", 18))
     selected = stories[:limit]
     notes = [f"{len(stories) - limit} lower-materiality stories not checked (limit {limit})"] if len(stories) > limit else []
 

@@ -17,9 +17,10 @@ from pydantic import BaseModel, Field
 from .. import cluster
 from ..config import Settings
 from ..llm import LLM
+from ..session import settings_for as session_settings
 from ..store import parse_iso
 from ..timewindow import fmt_day
-from .common import AUDIENCE, Window, item_line, ref_of
+from .common import AUDIENCE, Session, Window, item_line, ref_of
 
 SYSTEM = f"""You are the markets analyst on the overnight desk for a morning briefing.
 
@@ -110,6 +111,7 @@ class Story:
     materiality: int
     why_it_matters: str
     claims: list[Claim] = field(default_factory=list)
+    session: bool = False  # every cited item is from the previous session (reader/session.py)
 
 
 _COMPOUND = re.compile(r",\s+(?:with|while|as)\s|;\s")
@@ -122,9 +124,10 @@ def select_groups(kept: list[dict], scores: dict[str, int], limit: int, settings
                                  int(extra.get("group_size", 3)), int(extra.get("owner_floor", 0)))
 
 
-def _items_block(refmap: dict[str, dict], groups: list[list[dict]] | None, tz: str, now) -> str:
+def _items_block(refmap: dict[str, dict], groups: list[list[dict]] | None, tz: str, now,
+                 skip: set[str] = frozenset()) -> str:
     if not groups:
-        return "\n\n".join(item_line(r, it, tz, now, 500) for r, it in refmap.items())
+        return "\n\n".join(item_line(r, it, tz, now, 500) for r, it in refmap.items() if it["id"] not in skip)
     ref_of_id = {it["id"]: r for r, it in refmap.items()}
     blocks = []
     for g in groups:
@@ -133,10 +136,22 @@ def _items_block(refmap: dict[str, dict], groups: list[list[dict]] | None, tz: s
     return "\n\n".join(blocks)
 
 
+def session_note(session: Session, min_materiality: int, max_stories: int) -> str:
+    return (f"Previous session: the items below were published {session.describe()}, before the overnight window, "
+            f"and no brief has covered them; the reader may have missed them. Read them with the night's items: when "
+            f"an overnight item continues a development from the session, that is one story, and its claims say what "
+            f"is new overnight. A story built only from these items is printed in a section of its own. Return one "
+            f"only if it has materiality {min_materiality} or more, and at most {max_stories} such stories, within "
+            f"the 25.")
+
+
 def find(llm: LLM, settings: Settings, items: list[dict], tracked: list[dict], window: Window,
-         groups: list[list[dict]] | None = None) -> tuple[list[Story], list[str]]:
+         groups: list[list[dict]] | None = None, session: Session | None = None,
+         session_groups: list[list[dict]] | None = None) -> tuple[list[Story], list[str]]:
     """Returns the stories plus notes about anything the code had to discard. With `groups` (from
-    select_groups) the items are shown to the analyst by development; `items` must be their flattening."""
+    select_groups) the items are shown to the analyst by development; `items` must be their flattening.
+    With `session` and `session_groups`, the previous session's items follow the night's in a block of their
+    own, and `items` ends with their flattening; a story citing only those items is marked `session`."""
     refmap = {f"A{i}": it for i, it in enumerate(items, start=1)}
     tracked_map = {f"S{i}": row for i, row in enumerate(tracked, start=1)}
 
@@ -148,7 +163,12 @@ def find(llm: LLM, settings: Settings, items: list[dict], tracked: list[dict], w
             lines.append(f"[{ref}] {row['title']} (last reported {fmt_day(last.date())}): {row['last_state']}")
         parts.append("Stories we have been tracking:\n" + "\n".join(lines))
     parts.append("Themes the reader follows closely:\n" + "\n".join(f"- {t}" for t in settings.themes))
-    parts.append("Items:\n\n" + _items_block(refmap, groups, settings.tz, window.end))
+    session_ids = {it["id"] for g in (session_groups or []) for it in g}
+    parts.append("Items:\n\n" + _items_block(refmap, groups, settings.tz, window.end, skip=session_ids))
+    if session and session_ids:
+        cfg = session_settings(settings)
+        parts.append(session_note(session, cfg["min_materiality"], cfg["max_stories"]) + "\n\n"
+                     + _items_block(refmap, session_groups, settings.tz, window.end))
     user = "\n\n".join(parts)
 
     out = llm.call("find", SYSTEM, user, FindOut, expected_output=9000, reserve=0.45, label=f"{len(items)} items")
@@ -179,6 +199,7 @@ def find(llm: LLM, settings: Settings, items: list[dict], tracked: list[dict], w
             key=f"T{n}", title=s.title.strip(), continues=continues, category=s.category, region=s.region,
             audiences=list(dict.fromkeys(s.audiences)), materiality=min(5, max(1, s.materiality)),
             why_it_matters=s.why_it_matters.strip(), claims=claims,
+            session=bool(session_ids) and all(i in session_ids for c in claims for i in c.item_ids),
         ))
     stories.sort(key=lambda st: -st.materiality)
     return stories, notes

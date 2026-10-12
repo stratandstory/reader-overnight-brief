@@ -63,7 +63,7 @@ If you set Reader up with Claude Code:
 - Reader's folder includes Claude Code settings (`.claude/settings.json`) that stop Claude reading `.env`, stop it reading your clipboard directly, and make it ask you before any command that costs money or changes your Mac's schedule. Reader's instructions for Claude (`CLAUDE.md`) tell it never to ask for, read or repeat your key.
 - These are safeguards, not guarantees. The one that matters most is yours: **never type or paste the key into the conversation**, and decline any request to read `.env`.
 
-## The overnight schedule
+## The schedule
 
 `./schedule.sh` adds small job files to your user account's own `~/Library/LaunchAgents` folder (they're named `com.reader.collect`, `com.reader.package` and `com.reader.brief`). They run as you, need no administrator password, and change no system settings. `./schedule.sh off` removes them. The one setting you change yourself, keeping the Mac awake, you can turn off again in System Settings.
 

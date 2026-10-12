@@ -112,7 +112,7 @@ This runs every step except the AI calls and prints the estimated cost by stage.
 
 ![Terminal output of ./brief dry-run: the projected cost by stage and the total against the $4.00 ceiling](../images/term-dry-run.svg)
 
-## Step 8. Write your first brief (about $1.50 to $3)
+## Step 8. Write your first brief (about $1.50 to $3.50)
 
 ```bash
 ./brief run
@@ -132,28 +132,28 @@ To open the brief:
 
 ## Step 9. Run it automatically (optional)
 
-Reader can collect the news every 30 minutes overnight and, if you like, write the brief at 6:30 AM on weekdays. [Guide 6](06-every-morning.md#run-it-automatically) explains the two modes. In short:
+Reader can collect the news every 30 minutes and, if you like, write the brief at 6:30 AM on weekdays. [Guide 6](06-every-morning.md#run-it-automatically) explains the two modes. In short:
 
 ```bash
 ./schedule.sh collect
 ```
 
-collects overnight and saves each weekday morning's news at 6:30 AM; you run `./brief run` when you want the brief. Or:
+collects every 30 minutes and saves each weekday morning's news at 6:30 AM; you run `./brief run` when you want the brief. Or:
 
 ```bash
 ./schedule.sh on
 ```
 
-does the same and also writes the brief at 6:30 AM on weekdays, with a Mac notification when it's ready (about $50 to $65 a month).
+does the same and also writes the brief at 6:30 AM on weekdays, with a Mac notification when it's ready (about $55 to $75 a month).
 
 To check what's scheduled: `./schedule.sh status`. To stop everything: `./schedule.sh off`.
 
 ![Terminal output of ./schedule.sh collect and ./schedule.sh status](../images/term-schedule.svg)
 
-Then set your Mac to stay awake overnight: [guide 6](06-every-morning.md#keep-the-mac-awake-overnight).
+Then keep the Mac awake while the schedule runs: [guide 6](06-every-morning.md#keep-the-mac-awake).
 
 ## You're done
 
-You have a brief in `~/Reader/briefs/`, a working key, your choice of sources, and, if you chose, the overnight schedule.
+You have a brief in `~/Reader/briefs/`, a working key, your choice of sources, and, if you chose, the schedule.
 
 Next: [5. Sources and their terms](05-sources-and-terms.md) if you haven't read it, then [6. Every morning](06-every-morning.md)

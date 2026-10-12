@@ -6,7 +6,8 @@ PY=""
 for c in python3.14 python3.13 python3.12 python3.11 python3; do
   # macOS's own /usr/bin/python3 is a stand-in that offers to install Apple's developer tools; skip it when
   # they are not installed (their Python is too old for Reader anyway).
-  if [ "$c" = python3 ] && [ "$(command -v python3)" = /usr/bin/python3 ] && ! xcode-select -p >/dev/null 2>&1; then
+  if [ "$c" = python3 ] && [ "$(uname)" = Darwin ] && [ "$(command -v python3)" = /usr/bin/python3 ] \
+     && ! xcode-select -p >/dev/null 2>&1; then
     continue
   fi
   if command -v "$c" >/dev/null 2>&1 && "$c" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)'; then

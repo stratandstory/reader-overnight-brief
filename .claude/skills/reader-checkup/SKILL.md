@@ -17,7 +17,7 @@ Run the checks, then report. Lead each line with the verdict (working, not worki
 4. **Schedule:** `./schedule.sh status`. If the last collection is more than an hour old while the schedule is on, the Mac was probably asleep, or the folder has moved since the schedule was set up (fix: run `./schedule.sh collect` or `./schedule.sh on` again from this folder).
 5. **Last run:** find the newest folder in `data/runs/` (`ls -t data/runs | head -3`) and read the top of its `report.md`: the funnel, the cost table and any "Run stopped" note. Say whether it produced a brief, what it cost, and, if it stopped, why.
 6. **Calendar:** read the last date in `config/calendar.toml`. If it's within 30 days of today or already past, say the data-release calendar needs next year's dates (`docs/guide/09-make-it-yours.md`, "The release calendar").
-7. **Sleep:** `pmset -g | grep -E '^ *sleep'`. If the schedule is on and the Mac sleeps after some minutes, point them to `docs/guide/06-every-morning.md`, "Keep the Mac awake overnight". They change the setting themselves.
+7. **Sleep:** `pmset -g | grep -E '^ *sleep'`. If the schedule is on and the Mac sleeps after some minutes, point them to `docs/guide/06-every-morning.md`, "Keep the Mac awake". They change the setting themselves.
 8. **Disk:** `du -sh data briefs`. Mention it only if `data` is over 2 GB.
 
 ## If the person described a specific problem

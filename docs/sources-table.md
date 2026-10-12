@@ -43,6 +43,7 @@ Generated from `config/sources.toml`. **Terms** is what the publisher's terms of
 | The Straits Times · Business | `straits_business` | restricts | No bots or scripts to access or use the site, RSS feeds included; no AI clause | all |
 | CBS News · MoneyWatch | `cbs_moneywatch` | no-clause | Personal, non-commercial; a generic clause against unauthorized scraping; no AI clause | unrestricted, all |
 | Semafor · Business, energy and China | `semafor` | no-clause | No terms page exists, only a privacy policy | unrestricted, all |
+| The Information · Articles and briefings | `the_information` | restricts | Terms of 2025-07-03 bar any automated system (robots, spiders, offline readers) used to access the service, and use to train AI; no clause on feeds | all |
 
 ## Official and primary
 

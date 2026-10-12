@@ -14,11 +14,10 @@ calendar_trading_days = 5
 #   "labelled"  print it on its own line, in italics, marked "Why it matters:"
 analysis = "off"
 # Where to put a copy of each finished brief: a flat folder (a synced drive, say), one file per brief,
-# named YYYY-MM-DD-reader-overnight-markets-brief.md with a provenance block on top naming `owner`.
+# named YYYY-MM-DD-reader-overnight-markets-brief.md with a provenance block on top that names Reader and no person.
 # Leave empty to write briefs/ only. A missing folder (drive not mounted) is reported, never fatal.
-# Both are personal: set them in config/local.toml, not here.
+# The path is personal: set it in config/local.toml, not here.
 workbench = ""
-owner = ""
 
 [sources]
 # Which sources this machine reads, by what each publisher's terms of use say (the `terms` field of each
@@ -37,6 +36,17 @@ max_lookback_hours = 100   # safety cap for long weekends
 # The morning package (./brief package, data/packages/<date>/): the window frozen at this time on a weekday,
 # whether or not a brief runs. ./brief run --package <date> writes that morning's brief later from it.
 package_time = "06:30"
+
+[session]
+# Highlights of the previous U.S. trading day (reader/session.py). The window above starts at the close and each
+# brief's window ends when it is written, so news reported during the trading day reached no brief: Mon Oct 5, the
+# Pentagon dropping Anthropic (BBC, 12:13 PM) and Microsoft cutting its Claude spending (The Information, 2:14 PM).
+# The session runs from that day's brief (or package_time, when none ran) to the close. Its items go through the
+# same stages as the night's; a story whose every source is from the session gets its own section, after Top stories.
+enabled = true
+analyst_items = 60     # session items shown to the analyst, on top of max_items for the night
+min_materiality = 3    # on the analyst's scale, 3 = moves a sector or a major stock; below it, left out
+max_stories = 3        # a ceiling, not a quota
 
 [budget]
 # Hard ceiling per brief. Stages scale down (fewer stories checked) before exceeding it.

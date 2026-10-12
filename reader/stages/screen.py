@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 from ..config import Settings
 from ..llm import LLM, StageError
-from .common import AUDIENCE, Window, item_line, ref_of
+from .common import AUDIENCE, Session, Window, item_line, ref_of
 
 SYSTEM = f"""You screen overnight news for a markets briefing.
 
@@ -38,7 +38,8 @@ class ScreenOut(BaseModel):
     scores: list[Score]
 
 
-def screen(llm: LLM, settings: Settings, items: list[dict], window: Window) -> tuple[list[dict], dict[str, int]]:
+def screen(llm: LLM, settings: Settings, items: list[dict], window: Window,
+           session: Session | None = None) -> tuple[list[dict], dict[str, int]]:
     cfg = settings.stage("screen")
     size = int(cfg.extra.get("batch_size", 60))
     system = SYSTEM + "\n\nThemes this reader follows closely:\n" + "\n".join(f"- {t}" for t in settings.themes)
@@ -48,7 +49,11 @@ def screen(llm: LLM, settings: Settings, items: list[dict], window: Window) -> t
         n, chunk = numbered
         refmap = {f"A{i}": it for i, it in enumerate(chunk, start=1)}
         lines = "\n\n".join(item_line(r, it, settings.tz, window.end, 240) for r, it in refmap.items())
-        user = f"Overnight window: {window.describe()}.\n\nItems:\n\n{lines}"
+        user = f"Overnight window: {window.describe()}."
+        if session:
+            user += (f" Items published {session.describe()} are from the previous U.S. session, which no brief has "
+                     f"covered; score them by the same standard.")
+        user += f"\n\nItems:\n\n{lines}"
         try:
             out = llm.call("screen", system, user, ScreenOut, expected_output=14 * len(chunk) + 200,
                            label=f"batch {n} of {len(batches)}")

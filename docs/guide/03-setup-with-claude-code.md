@@ -66,8 +66,8 @@ Claude then works through the setup with you, one step at a time:
 | 5 | Explains the sources and their terms, and asks which you want ([guide 5](05-sources-and-terms.md)) | free |
 | 6 | Collects the night's news and shows which sources answered | free |
 | 7 | Estimates the cost of a brief (`./brief dry-run`) | free |
-| 8 | Writes your first brief, **after asking you** | about $1.50 to $3 |
-| 9 | Sets up the overnight schedule, if you want it, and shows you how to keep the Mac awake | free |
+| 8 | Writes your first brief, **after asking you** | about $1.50 to $3.50 |
+| 9 | Sets up the schedule, if you want it, and shows you how to keep the Mac awake while it runs | free |
 
 ### Approving what Claude does
 
@@ -99,7 +99,7 @@ You should have:
 - a brief in `~/Reader/briefs/`
 - your key saved, and `./brief doctor` reporting that it works
 - your choice of sources saved
-- if you chose it, the overnight schedule running (`./schedule.sh status` says so)
+- if you chose it, the schedule running (`./schedule.sh status` says so)
 
 From then on you don't need Claude for the daily routine. Come back to it when you want something changed or explained; type `/reader-checkup` for a health check that looks at your key, sources, schedule and last run, and explains anything wrong.
 

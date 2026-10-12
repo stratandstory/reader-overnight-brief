@@ -10,7 +10,7 @@ Reader's job is to tell a busy reader what happened overnight that matters to ma
 
 | Stage | Done by | Job |
 |---|---|---|
-| **Collect** | code | Reads every chosen feed every 30 minutes and keeps what was published since the previous U.S. close. Company press releases are kept only if they name a company on your watchlist. |
+| **Collect** | code | Reads every chosen feed every 30 minutes and keeps what was published since the previous U.S. close, plus, for a short section of its own, what the previous trading day reported after that day's brief. Company press releases are kept only if they name a company on your watchlist. |
 | **Screen** | Claude Sonnet 5, low effort | Scores every headline for relevance and drops what can't matter. Tuned to keep borderline items, because nothing later can see an item the screen threw away. |
 | **Find** | Claude Opus 5.5, high effort | The analyst. Reads the whole night, decides what the stories are, and drafts narrow factual claims, each citing the items it rests on. |
 | **Check** | Claude Fable 5.1, medium effort | The independent checker. Fetches each source again from the publisher, and confirms, narrows or rejects every claim. It never sees the analyst's reasoning, and it's a different model. |
@@ -48,8 +48,16 @@ Reader keeps a local record of what earlier briefs reported, so the analyst can 
 
 Every run writes a report: the funnel (items read, kept, grouped into stories, claims checked and passed), every claim with its verdict and sources, what the audit corrected, what was left out and why, and the cost of each stage. It's in `data/runs/<date-time>/report.md`.
 
+## How it runs
+
+Reader is a set of scheduled background jobs on a Mac, not a service. `./schedule.sh` installs them as launchd agents in the user's own `~/Library/LaunchAgents`: a collector every 30 minutes, and at 6:30 AM New York time on weekdays either the brief or a frozen copy of the morning's news (a package) from which a missed brief can be written later. Collected items, story memory and the release calendar live in a local SQLite database; every run writes its report next to it.
+
+The collector exists because many feeds list only their latest 20 or so items. Each check records the time span its feed covers; when every item is newer than anything the previous check saw, the feed turned over in between, and the check is logged as a possible gap. Gaps appear in `./brief sources` and in the run report, so a brief's coverage is measured rather than assumed.
+
+The Mac does little of the work. On the reference configuration, a MacBook Air (Apple M2, 16 GB memory), macOS 15 Sequoia, Python 3.14, a collection pass takes about 35 seconds, mostly network wait, with 2 seconds of CPU and 65 MB of memory; a brief's local work peaks at about 110 MB, and its 5 to 10 minutes are spent waiting on the models. The requirement is availability, not speed: the host has to be awake and online across the span the brief covers.
+
 ## Costs
 
-A weekday brief costs about $2.25 to $3; the checking stage is the largest part, which is where the money should go. Each run has a hard ceiling ($4 by default). Reader keeps costs in check by trimming what each stage reads (headlines and short summaries, not articles), caching the checker's instructions between calls, and limiting what the expensive models write, not by using weaker models where accuracy depends on them.
+A weekday brief costs about $2.50 to $3.50; the checking stage is the largest part, which is where the money should go. Each run has a hard ceiling ($4 by default). Reader keeps costs in check by trimming what each stage reads (headlines and short summaries, not articles), caching the checker's instructions between calls, and limiting what the expensive models write, not by using weaker models where accuracy depends on them.
 
 [Back to the start](../README.md)

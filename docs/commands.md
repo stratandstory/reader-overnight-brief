@@ -8,7 +8,7 @@ Run these in Terminal from the Reader folder (`cd ~/Reader` first), or ask Claud
 
 | Command | What it does | Cost |
 |---|---|---|
-| `./brief run` | Collects the latest news and writes the brief. 5 to 10 minutes. | about $1.50 to $3 |
+| `./brief run` | Collects the latest news and writes the brief. 5 to 10 minutes. | about $1.50 to $3.50 |
 | `./brief open` | Opens the newest brief. | free |
 | `./brief doctor` | Checks that your key works and reaches every model, and shows your sources choice. | free |
 | `./brief sources` | Each source's terms label and whether it answered at the last check, with possible gaps in the last 24 hours. | free |

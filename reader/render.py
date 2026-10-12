@@ -86,14 +86,31 @@ def _item_block(n: int | None, item, tz: str, now: datetime, tracked: dict) -> s
     return "\n".join(lines)
 
 
+def session_heading(session) -> tuple[str, str]:
+    """The previous trading day's section: its heading and the line under it that says what it covers. Named by
+    the day, not "yesterday": on a Monday morning the previous session is Friday's."""
+    day = session.day()
+    close = fmt_time(session.end, session.tz)
+    span = (f"after {day}'s brief ({fmt_time(session.start, session.tz)}) and before the {close} close" if session.after_brief
+            else f"between {fmt_time(session.start, session.tz)} and the {close} close")
+    return (f"## Highlights from {day}'s trading day",
+            f"_Reported {day} {span}, so no brief has carried them. The few that matter most for today; everything "
+            f"else in this brief is overnight news._")
+
+
 def render_brief(brief, *, now: datetime, window_start: datetime, tz: str, tracked: dict, institutional: list[dict],
-                 stats: dict, unavailable: list[str], run_id: str, late_note: str | None = None) -> str:
+                 stats: dict, unavailable: list[str], run_id: str, late_note: str | None = None,
+                 session=None) -> str:
+    """`session` (reader/stages/common.py Session) names the previous trading day the brief's session section covers."""
     local = now.astimezone(ZoneInfo(tz))
+    printed = session if session and getattr(brief, "session", None) else None  # the section, when it has items
+    covers = f"news since {fmt_time(window_start, tz, now)}"
+    if printed:
+        covers += f", plus highlights from {session.day()} {fmt_time(session.start, tz)} to {fmt_time(session.end, tz)}"
     out = [
         "# Overnight Markets Brief",
         "",
-        f"**{local.strftime('%A, %B')} {local.day}, {local.year} · {fmt_time(now, tz)} New York** · "
-        f"news since {fmt_time(window_start, tz, now)}",
+        f"**{local.strftime('%A, %B')} {local.day}, {local.year} · {fmt_time(now, tz)} New York** · {covers}",
         "",
     ]
     if late_note:
@@ -115,6 +132,10 @@ def render_brief(brief, *, now: datetime, window_start: datetime, tz: str, track
             out += [_item_block(n, item, tz, now, tracked), ""]
     else:
         out += ["## Top stories", "", "Nothing material passed the evidence check this morning.", ""]
+    if printed:
+        heading, scope = session_heading(session)
+        out += [heading, "", scope, ""]
+        out += [_item_block(None, item, tz, now, tracked) for item in brief.session] + [""]
     if brief.second:
         out += ["## Also worth knowing", ""]
         out += [_item_block(None, item, tz, now, tracked) for item in brief.second] + [""]
@@ -150,8 +171,11 @@ def render_brief(brief, *, now: datetime, window_start: datetime, tz: str, track
     narrowed = stats.get("claims_narrowed", 0)
     corrected = stats.get("lines_corrected", 0)
     left_out = stats.get("stories_unpublished", 0)
-    footer = (f"_How this brief was checked: {stats.get('items_in_window', 0)} items from {stats.get('sources_ok', 0)} sources were "
-              f"screened. {checked} factual claims were checked by a separate model against the publisher's own "
+    screened = f"{stats.get('items_in_window', 0)} items from {stats.get('sources_ok', 0)} sources were screened"
+    if session and stats.get("items_in_session"):
+        screened = (f"{stats.get('items_in_window', 0)} overnight items and {stats['items_in_session']} from "
+                    f"{session.day()}'s session, from {stats.get('sources_ok', 0)} sources, were screened")
+    footer = (f"_How this brief was checked: {screened}. {checked} factual claims were checked by a separate model against the publisher's own "
               f"headline and summary (official pages and company releases in full): {passed} passed, "
               f"{checked - passed} dropped, {narrowed} narrowed to what the source says. A final read corrected "
               f"{corrected} line{'s' if corrected != 1 else ''}"
@@ -167,17 +191,28 @@ def render_brief(brief, *, now: datetime, window_start: datetime, tz: str, track
 
 def render_report(*, run_id: str, now: datetime, window_start: datetime, tz: str, stats: dict, usage: list[dict],
                   budget_max: float, checked, brief, notes: list[str], statuses, calls: list[dict],
-                  brief_path: Path | None, gaps: list[str] | None = None) -> str:
+                  brief_path: Path | None, gaps: list[str] | None = None, session=None) -> str:
     out = [f"# Run {run_id}", "",
-           f"Window: {fmt_time(window_start, tz, now)} to {fmt_time(now, tz)} (New York)  ",
-           f"Brief: {brief_path.name if brief_path else 'not written'}", ""]
+           f"Window: {fmt_time(window_start, tz, now)} to {fmt_time(now, tz)} (New York)  "]
+    if session:
+        out.append(f"Previous session: {fmt_time(session.start, tz, now)} to {fmt_time(session.end, tz, now)}"
+                   + (" (from that day's brief to the close)" if session.after_brief else " (from the package time to the close)")
+                   + "  ")
+    out += [f"Brief: {brief_path.name if brief_path else 'not written'}", ""]
     out += ["## Funnel", "", "| Stage | Count |", "|---|---:|"]
     for label, key in [("Items in window", "items_in_window"), ("Kept by screen", "items_kept"),
                        ("Sent to analyst", "items_to_find"), ("Stories found", "stories_found"),
                        ("Stories checked", "stories_checked"), ("Claims checked", "claims_checked"),
                        ("Claims verified", "claims_verified"), ("Claims narrowed by the checker", "claims_narrowed"),
                        ("Lines corrected by the audit", "lines_corrected"), ("Items published", "items_published"),
-                       ("Checked stories left out", "stories_unpublished")]:
+                       ("Checked stories left out", "stories_unpublished"),
+                       ("Previous session: items", "items_in_session"), ("Previous session: kept by screen", "session_kept"),
+                       ("Previous session: sent to analyst", "session_to_find"),
+                       ("Previous session: stories found", "session_stories_found"),
+                       ("Previous session: stories checked", "session_stories_checked"),
+                       ("Previous session: items published", "session_published")]:
+        if key not in stats and key.startswith(("session", "items_in_session")):
+            continue
         value = str(stats.get(key, 0))
         if key == "items_to_find" and stats.get("groups_to_find"):
             value += f" (in {stats['groups_to_find']} developments)"
@@ -195,7 +230,8 @@ def render_report(*, run_id: str, now: datetime, window_start: datetime, tz: str
     if checked:
         out += ["## Claims", ""]
         for cs in checked:
-            out.append(f"### {cs.story.key} {cs.story.title} (materiality {cs.story.materiality})")
+            marker = ", previous session" if getattr(cs.story, "session", False) else ""
+            out.append(f"### {cs.story.key} {cs.story.title} (materiality {cs.story.materiality}{marker})")
             for vc in cs.verified:
                 src = "; ".join(f"{ev.publisher} — {ev.note}" for ev in vc.evidence)
                 changed = f" (analyst wrote: \"{vc.original}\")" if vc.original != vc.text else ""

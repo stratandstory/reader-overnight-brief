@@ -19,7 +19,8 @@ from ..llm import LLM
 from ..store import parse_iso
 from ..timewindow import fmt_day, fmt_time, fmt_time_or_day
 from .check import CheckedStory, VerifiedClaim
-from .common import AUDIENCE, Window, ref_of
+from ..session import settings_for as session_settings
+from .common import AUDIENCE, Session, Window, ref_of
 
 SYSTEM = f"""You write the overnight markets brief.
 
@@ -33,10 +34,16 @@ Each has verified claims ([V1], [V2] ...) with a status:
 - developing: unconfirmed, from a less authoritative source; it may appear only under developing
 
 Write:
-- summary: one sentence of at most 30 words on what matters most this morning, with the claims it states.
+- summary: one sentence of at most 30 words on what matters most this morning, with the claims it states. Build \
+it from overnight stories; the previous session has its own section.
 - top: up to 5 items that matter most for today's U.S. session, most important first.
 - second: up to 10 further items worth knowing, most important first.
-- developing: up to 5 unconfirmed reports worth watching.
+- developing: up to 5 unconfirmed reports worth watching: items whose claims are all attributed or developing. \
+Reported or confirmed news goes in top or second, or is left out.
+- session: highlights of the previous trading day: stories marked "previous session", reported during the last U.S. \
+session before the overnight window and in no brief yet. At most the number given with the stories, most important \
+first, and only those that matter for today. A previous-session story goes only here; every other story is overnight \
+news and never goes here.
 - calendar: the [K] ids of scheduled events to show, in date order. Include every event within the next five \
 trading days that matters for U.S. markets; include later events only if they are strategically important.
 These are ceilings. A quiet night gets a short brief. Never pad, and leave out anything that fails the materiality test.
@@ -60,7 +67,8 @@ long-term yields; a company and its sector), name each subject in full so a read
 
 Tense and time: a claim written while something was still under way ("heading for its worst week", "is set to") \
 stays that way; never state it as done. Write "today", "this morning", "the open" or "today's session" only when the \
-next U.S. session is today; otherwise name the day ("into Monday's open"). Give dates as dates, not weekdays.
+next U.S. session is today; otherwise name the day ("into Monday's open"). Give dates as dates, not weekdays. A \
+previous-session story happened during that session: never call it overnight or this morning's.
 
 Register: a senior strategist's morning note. Short declarative sentences, concrete nouns, no filler or stock \
 phrases, no exclamation marks, no markdown. Write the brief and nothing else."""
@@ -88,6 +96,7 @@ class WriteOut(BaseModel):
     top: list[Item]
     second: list[Item]
     developing: list[Item]
+    session: list[Item] = Field(description="Previous-session stories only, most important first; empty when none")
     calendar: list[str] = Field(description="Ids of the scheduled events to show, for example ['K1', 'K3']")
 
 
@@ -139,9 +148,10 @@ class Brief:
     developing: list[BriefItem]
     calendar: list[CalendarEntry]
     notes: list[str] = field(default_factory=list)
+    session: list[BriefItem] = field(default_factory=list)  # the previous trading day's highlights
 
     def items(self) -> list[BriefItem]:
-        return self.top + self.second + self.developing
+        return self.top + self.second + self.developing + self.session
 
 
 def _sources(vc: VerifiedClaim, tz: str, now) -> str:
@@ -149,13 +159,17 @@ def _sources(vc: VerifiedClaim, tz: str, now) -> str:
 
 
 def write(llm: LLM, settings: Settings, checked: list[CheckedStory], tracked: dict[str, dict],
-          calendar: list[CalendarEntry], window: Window) -> Brief | None:
+          calendar: list[CalendarEntry], window: Window, session: Session | None = None,
+          session_keys: set[str] = frozenset()) -> Brief | None:
+    """`session_keys` are the stories the previous session's section may hold (reader/session.py decides)."""
     stories = [cs for cs in checked if cs.verified]
+    session_keys = set(session_keys) if session else set()
     blocks = []
     for cs in stories:
         st = cs.story
+        mark = ", previous session" if st.key in session_keys else ""
         lines = [f"[{st.key}] {st.title} — {st.category.replace('_', ' ')}, {st.region.replace('_', '/')}, "
-                 f"materiality {st.materiality}/5, audiences: {', '.join(st.audiences) or 'n/a'}",
+                 f"materiality {st.materiality}/5, audiences: {', '.join(st.audiences) or 'n/a'}{mark}",
                  f"Analyst's note (not a fact): {st.why_it_matters}"]
         prior = tracked.get(st.continues or "")
         if prior:
@@ -169,21 +183,26 @@ def write(llm: LLM, settings: Settings, checked: list[CheckedStory], tracked: di
         f"[{c.ref}] {fmt_day(c.day)} — {c.title} ({c.publisher})" + (" [beyond five trading days]" if c.later else "")
         for c in calendar
     ]
-    session = window.next_session()
-    session_line = ("The next U.S. cash session opens today." if session == "today"
-                    else f"Markets are closed today; the next U.S. cash session opens {session}.")
+    next_open = window.next_session()
+    session_line = ("The next U.S. cash session opens today." if next_open == "today"
+                    else f"Markets are closed today; the next U.S. cash session opens {next_open}.")
+    session_cap = session_settings(settings)["max_stories"]
+    previous = (f"Stories marked \"previous session\" were reported {session.describe()}, before the overnight "
+                f"window; at most {session_cap} go under session.\n\n") if session_keys else ""
     user = (f"Today is {window.today()}. The overnight window runs {window.describe()}. {session_line}\n\n"
-            "Stories:\n\n" + ("\n\n".join(blocks) or "(none passed the check)") +
+            + previous + "Stories:\n\n" + ("\n\n".join(blocks) or "(none passed the check)") +
             "\n\nScheduled events:\n" + ("\n".join(cal_lines) or "(none)"))
 
     out = llm.call("write", SYSTEM, user, WriteOut, expected_output=7000, reserve=0.08, label=f"{len(stories)} stories")
     if out is None:
         return None
-    return place(out, stories, calendar, settings)
+    return place(out, stories, calendar, settings, session_keys)
 
 
-def place(out: WriteOut, stories: list[CheckedStory], calendar: list[CalendarEntry], settings: Settings) -> Brief:
-    """Enforce, in code, what the editor may put where and what each line may cite."""
+def place(out: WriteOut, stories: list[CheckedStory], calendar: list[CalendarEntry], settings: Settings,
+          session_keys: set[str] = frozenset()) -> Brief:
+    """Enforce, in code, what the editor may put where and what each line may cite. The previous session's
+    section holds `session_keys` stories and nothing else, wherever the editor filed them."""
     brief_cfg = settings.raw["brief"]
     analysis = brief_cfg.get("analysis", "off")
     by_story = {cs.story.key: cs for cs in stories}
@@ -194,10 +213,12 @@ def place(out: WriteOut, stories: list[CheckedStory], calendar: list[CalendarEnt
         refs = dict.fromkeys(ref_of(c, "V") for c in ids)
         return [claims[r] for r in refs if r in claims and (story_key is None or claims[r].story_key == story_key)]
 
-    placed: dict[str, list[BriefItem]] = {"top": [], "second": [], "developing": []}
+    placed: dict[str, list[BriefItem]] = {"top": [], "second": [], "developing": [], "session": []}
+    moved: list[BriefItem] = []  # filed under Developing but not unconfirmed; they keep their place in the brief's length
     seen: set[str] = set()
-    for section in ("top", "second", "developing"):
-        for it in getattr(out, section):
+    for filed in ("top", "second", "developing", "session"):
+        for it in getattr(out, filed):
+            section = filed
             key = ref_of(it.story, "T")
             cs = by_story.get(key)
             if cs is None or key in seen:
@@ -219,22 +240,45 @@ def place(out: WriteOut, stories: list[CheckedStory], calendar: list[CalendarEnt
                 audiences=list(dict.fromkeys(it.audiences)),
                 continues=cs.story.continues,
             )
+            if key in session_keys:
+                if filed != "session":
+                    notes.append(f"Moved '{it.headline}' to the previous session's highlights: all its sources are "
+                                 f"from that session")
+                item.section = "session"
+                placed["session"].append(item)
+                seen.add(key)
+                continue
+            if filed == "session":
+                section = item.section = "second"
+                notes.append(f"Moved '{it.headline}' out of the previous session's highlights: it has overnight sources")
             if section != "developing" and all(c.status == "developing" for c in item.claims):
                 item.section = "developing"
                 notes.append(f"Moved '{it.headline}' to Developing: its only support is an unconfirmed report")
+            elif section == "developing" and any(c.status in ("reported", "confirmed") for c in item.claims):
+                # Developing is headed "not yet confirmed"; Mon Oct 5 the editor filed Bolsonaro's first-round
+                # lead there, reported by Bloomberg, WSJ and the FT
+                item.section = "second"
+                moved.append(item)
+                notes.append(f"Moved '{it.headline}' out of Developing: its claims are reported, not unconfirmed")
+                seen.add(key)
+                continue
             placed[item.section].append(item)
             seen.add(key)
     top_max, second_max, dev_max = brief_cfg["top_max"], brief_cfg["second_max"], brief_cfg["developing_max"]
     overflow = placed["top"][top_max:]
     for item in overflow:
         item.section = "second"
-    placed["second"] = (overflow + placed["second"])[:second_max]
+    placed["second"] = (overflow + placed["second"])[:second_max] + moved[:dev_max]
     placed["top"] = placed["top"][:top_max]
     placed["developing"] = placed["developing"][:dev_max]
+    session_max = session_settings(settings)["max_stories"]
+    for item in placed["session"][session_max:]:
+        notes.append(f"Left out '{item.headline.text}': past the previous session's ceiling of {session_max}")
+    placed["session"] = placed["session"][:session_max]
 
     cal_by_ref = {c.ref: c for c in calendar}
     chosen = [cal_by_ref[r] for r in dict.fromkeys(ref_of(c, "K") for c in out.calendar) if r in cal_by_ref]
     chosen.sort(key=lambda c: (c.day, c.title))
     summary = Line(out.summary.strip(), resolve(out.summary_claims, None))
     return Brief(summary=summary, top=placed["top"], second=placed["second"],
-                 developing=placed["developing"], calendar=chosen, notes=notes)
+                 developing=placed["developing"], calendar=chosen, notes=notes, session=placed["session"])

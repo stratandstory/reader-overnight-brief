@@ -46,6 +46,26 @@ class Window:
         return f"{day.strftime('%A')}, {fmt_day(day)[5:]}"
 
 
+@dataclass
+class Session:
+    """The previous U.S. trading day's news that no overnight window covers: from that day's brief (or the
+    package time, when no brief ran) to the close. See reader/session.py."""
+    start: datetime
+    end: datetime
+    tz: str
+    after_brief: bool = False  # the start is when that day's brief was written, not the package time
+
+    def day(self) -> str:
+        """'Monday'."""
+        return self.end.astimezone(ZoneInfo(self.tz)).strftime("%A")
+
+    def describe(self) -> str:
+        """'Monday, October 5, from 9:39 AM to the 4:00 PM close (New York time)'."""
+        end = self.end.astimezone(ZoneInfo(self.tz))
+        return (f"{end.strftime('%A, %B')} {end.day}, from {fmt_time(self.start, self.tz)} to the "
+                f"{fmt_time(self.end, self.tz)} close (New York time)")
+
+
 def item_line(ref: str, item: dict, tz: str, now: datetime, summary_chars: int) -> str:
     when = fmt_time(parse_iso(item["published_utc"]), tz, now)
     head = f"[{ref}] {item['publisher']} · {item['section']} · {TIER_LABEL.get(item['tier'], '')} · {when}"

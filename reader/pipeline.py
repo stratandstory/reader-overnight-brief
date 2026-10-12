@@ -12,6 +12,7 @@ from datetime import date, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from . import session as session_mod
 from .budget import Budget
 from .collect import collect
 from .config import BRIEFS_DIR, DATA_DIR, Settings
@@ -23,7 +24,7 @@ from .stages import audit as audit_stage
 from .stages import check as check_stage
 from .stages import find as find_stage
 from .stages import write as write_stage
-from .stages.common import Window
+from .stages.common import Session, Window
 from .stages.screen import screen
 from .stages.write import CalendarEntry
 from .store import Store, parse_iso, utcnow
@@ -130,13 +131,19 @@ def remember(store: Store, run_id: str, brief, checked, now, day_start, stories:
         store.close_stale_stories(now - timedelta(days=30))
 
 
-def dry_run_projection(settings: Settings, budget: Budget, items: list[dict]) -> None:
-    """Screening is projected from the real items; later stages from typical proportions."""
+def dry_run_projection(settings: Settings, budget: Budget, items: list[dict], n_session: int = 0) -> None:
+    """Screening is projected from the real items; later stages from typical proportions. `items` includes the
+    previous session's `n_session` items, which have their own allowance at the analyst and the checker."""
     avg = sum(len(i["title"]) + min(len(i.get("summary") or ""), 500) + 80 for i in items) / max(1, len(items))
-    n_find = min(int(len(items) * 0.35), int(settings.stage("find").extra.get("max_items", 140)))
+    n_find = min(int((len(items) - n_session) * 0.35), int(settings.stage("find").extra.get("max_items", 140)))
+    cfg = session_mod.settings_for(settings)
+    if n_session:
+        n_find += min(int(n_session * 0.35), cfg["analyst_items"])
     budget.project("find", settings.stage("find").model, len(find_stage.SYSTEM) + int(n_find * avg) + 3000, 9000,
                    note=f"~{n_find} items, assuming a third are kept")
     n_st = min(int(settings.stage("check").extra.get("max_stories", 18)), 24)  # weekday analysts return 20 to 25
+    if n_session:
+        n_st += cfg["max_stories"]
     budget.project("check", settings.stage("check").model, n_st * (len(check_stage.SYSTEM) + 3000), n_st * 1500,
                    calls=n_st, note=f"~{n_st} stories (cache savings not counted)")
     budget.project("write", settings.stage("write").model, len(write_stage.SYSTEM) + 16000, 6000)
@@ -188,6 +195,8 @@ def run_brief(settings: Settings, store: Store, dry_run: bool = False, collect_f
 
     statuses = []
     pkg = None
+    session: Session | None = None
+    session_in: list[dict] = []
     if package_day:
         try:
             pkg = load_package(package_day, root=DATA_DIR / "packages")
@@ -196,6 +205,10 @@ def run_brief(settings: Settings, store: Store, dry_run: bool = False, collect_f
             return 1
         start, end = pkg["window_start"], pkg["window_end"]
         in_window = pkg["items"]
+        if pkg.get("session") and session_mod.settings_for(settings)["enabled"]:
+            sd = pkg["session"]  # packages from before 2026-10-06 have none
+            session = Session(parse_iso(sd["start"]), parse_iso(sd["end"]), tz, bool(sd.get("after_brief")))
+            session_in = pkg.get("session_items", [])
         say(f"Writing the brief for {fmt_day(package_day)} late, from its morning package "
             f"(packaged {fmt_time(pkg['packaged_utc'], tz, now)}).")
     else:
@@ -215,11 +228,20 @@ def run_brief(settings: Settings, store: Store, dry_run: bool = False, collect_f
     if pkg:
         run_id += f"-for-{package_day:%Y%m%d}"
     window = Window(start, end, tz)
+    if not pkg:
+        session = session_mod.bounds(settings, store, window)
+        session_in = session_mod.items(store, session) if session else []
     local_asof = asof.astimezone(ZoneInfo(tz))
     day_start = local_asof.replace(hour=0, minute=0, second=0, microsecond=0)
     items = [i for i in in_window if i["model_ok"] and i["kind"] != "institutional"]
     institutional = [i for i in in_window if i["kind"] == "institutional"][:1]
+    session_items = [i for i in session_in if i["model_ok"] and i["kind"] != "institutional"]
+    session_ids = {i["id"] for i in session_items}
+    if not session_items:
+        session = None
     say(f"{len(items)} items published {window.describe()}.")
+    if session:
+        say(f"{len(session_items)} more from the previous session, {session.describe()}.")
     if not items:
         say("Nothing in the window to brief. Try ./brief collect, then run again.")
         return 1
@@ -232,7 +254,10 @@ def run_brief(settings: Settings, store: Store, dry_run: bool = False, collect_f
         return 1
 
     stats = {"items_in_window": len(items),
-             "sources_ok": len({s.source.id for s in statuses if s.status == "ok"}) or len({i["source_id"] for i in items})}
+             "sources_ok": len({s.source.id for s in statuses if s.status == "ok"})
+             or len({i["source_id"] for i in items + session_items})}
+    if session:
+        stats["items_in_session"] = len(session_items)
     gaps = gap_lines(pkg, tz) if pkg else _gaps(store, settings, start, now)
     stats["feed_gaps"] = len(gaps)
     run_dir = DATA_DIR / "runs" / run_id
@@ -246,41 +271,64 @@ def run_brief(settings: Settings, store: Store, dry_run: bool = False, collect_f
         store.start_run(run_id, start, end)
 
     try:
-        say(f"Screening {len(items)} items with {settings.stage('screen').model}...")
-        kept, scores = screen(llm, settings, items, window)
+        say(f"Screening {len(items) + len(session_items)} items with {settings.stage('screen').model}...")
+        kept_all, scores = screen(llm, settings, items + session_items, window, session)
         if dry_run:
-            dry_run_projection(settings, budget, items)
+            dry_run_projection(settings, budget, items + session_items, len(session_items))
             return 0
+        kept = [i for i in kept_all if i["id"] not in session_ids]
+        session_kept = [i for i in kept_all if i["id"] in session_ids]
         stats["items_kept"] = len(kept)
-        _dump(run_dir / "1-screen.json", [{"id": i["id"], "score": scores.get(i["id"]), "publisher": i["publisher"], "title": i["title"]} for i in items])
+        if session:
+            stats["session_kept"] = len(session_kept)
+        _dump(run_dir / "1-screen.json", [{"id": i["id"], "score": scores.get(i["id"]), "publisher": i["publisher"],
+                                           "title": i["title"], **({"session": True} if i["id"] in session_ids else {})}
+                                          for i in items + session_items])
 
-        groups = find_stage.select_groups(kept, scores, int(settings.stage("find").extra.get("max_items", 140)), settings)
+        max_items = int(settings.stage("find").extra.get("max_items", 140))
+        session_cap = session_mod.settings_for(settings)["analyst_items"]
+        groups = find_stage.select_groups(kept, scores, max_items, settings)
+        session_groups = find_stage.select_groups(session_kept, scores, session_cap, settings) if session_kept else []
         to_find = [it for g in groups for it in g]
+        session_to_find = [it for g in session_groups for it in g]
         stats["items_to_find"] = len(to_find)
         stats["groups_to_find"] = len(groups)
         stats["find_owners"] = _by_owner(to_find)
+        if session:
+            stats["session_to_find"] = len(session_to_find)
         tracked_rows = store.tracked_before(day_start, asof - timedelta(days=14))
         tracked = {r["id"]: r for r in tracked_rows}
-        say(f"Finding stories in {len(to_find)} items with {settings.stage('find').model}...")
+        say(f"Finding stories in {len(to_find) + len(session_to_find)} items with {settings.stage('find').model}...")
         try:
-            stories, find_notes = find_stage.find(llm, settings, to_find, tracked_rows, window, groups=groups)
+            stories, find_notes = find_stage.find(llm, settings, to_find + session_to_find, tracked_rows, window,
+                                                  groups=groups, session=session, session_groups=session_groups)
         except OutputTruncated:
             groups = find_stage.select_groups(kept, scores, int(len(to_find) * 0.6), settings)
             to_find = [it for g in groups for it in g]
-            notes.append(f"Analyst output was cut off; retried with the top {len(to_find)} items")
-            say(f"  Analyst output was cut off; retrying with the top {len(to_find)} items...")
-            stories, find_notes = find_stage.find(llm, settings, to_find, tracked_rows, window, groups=groups)
+            if session_kept:
+                session_groups = find_stage.select_groups(session_kept, scores, int(len(session_to_find) * 0.6), settings)
+                session_to_find = [it for g in session_groups for it in g]
+            notes.append(f"Analyst output was cut off; retried with the top {len(to_find) + len(session_to_find)} items")
+            say(f"  Analyst output was cut off; retrying with the top {len(to_find) + len(session_to_find)} items...")
+            stories, find_notes = find_stage.find(llm, settings, to_find + session_to_find, tracked_rows, window,
+                                                  groups=groups, session=session, session_groups=session_groups)
         notes += find_notes
         stats["stories_found"] = len(stories)
         stats["claims_drafted"] = sum(len(s.claims) for s in stories)
+        if session:
+            stats["session_stories_found"] = sum(1 for s in stories if s.session)
         _dump(run_dir / "2-find.json", stories)
 
-        items_by_id = {i["id"]: i for i in items}
-        say(f"Checking {min(len(stories), int(settings.stage('check').extra.get('max_stories', 18)))} stories "
-            f"independently with {settings.stage('check').model}...")
-        checked, check_notes = check_stage.check(llm, settings, stories, items_by_id, fetcher, reserve=0.30,
-                                                 today=window.today())
+        items_by_id = {i["id"]: i for i in items + session_items}
+        to_check, select_notes = session_mod.select(stories, settings,
+                                                    int(settings.stage("check").extra.get("max_stories", 18)))
+        notes += select_notes
+        say(f"Checking {len(to_check)} stories independently with {settings.stage('check').model}...")
+        checked, check_notes = check_stage.check(llm, settings, to_check, items_by_id, fetcher, reserve=0.30,
+                                                 today=window.today(), limit=len(to_check))
         notes += check_notes
+        if session:
+            stats["session_stories_checked"] = sum(1 for cs in checked if cs.story.session)
         stats["stories_checked"] = len(checked)
         stats["claims_checked"] = sum(len(cs.verified) + len(cs.rejected) for cs in checked)
         stats["claims_verified"] = sum(len(cs.verified) for cs in checked)
@@ -289,17 +337,23 @@ def run_brief(settings: Settings, store: Store, dry_run: bool = False, collect_f
         stats["claims_narrowed"] = sum(1 for cs in checked for vc in cs.verified if vc.text != vc.original)
         notes += load_static_calendar(store)
         calendar = build_calendar(store, checked, settings, asof)
+        session_keys, for_writer, route_notes = (session_mod.route(checked, session_ids, settings) if session
+                                                 else (set(), checked, []))
+        notes += route_notes
         say(f"Writing the brief with {settings.stage('write').model}...")
-        brief = write_stage.write(llm, settings, checked, tracked, calendar, window)
+        brief = write_stage.write(llm, settings, for_writer, tracked, calendar, window, session=session,
+                                  session_keys=session_keys)
         notes += brief.notes
         say(f"Auditing the draft with {settings.stage('audit').model}...")
         audit_notes = audit_stage.audit(llm, settings, brief)
         notes += audit_notes
         stats["lines_corrected"] = sum(1 for n in audit_notes if not n.startswith("Model audit unavailable"))
         stats["items_published"] = len(brief.items())
+        if session:
+            stats["session_published"] = len(brief.session)
         published = {it.story_key for it in brief.items()}
-        stats["stories_unpublished"] = sum(1 for cs in checked if cs.verified and cs.story.key not in published)
-        for cs in checked:
+        stats["stories_unpublished"] = sum(1 for cs in for_writer if cs.verified and cs.story.key not in published)
+        for cs in for_writer:
             if cs.verified and cs.story.key not in published:
                 notes.append(f"Editor left out a checked story: {cs.story.title} (materiality {cs.story.materiality})")
         _dump(run_dir / "4-brief.json", brief)
@@ -311,14 +365,13 @@ def run_brief(settings: Settings, store: Store, dry_run: bool = False, collect_f
         brief_path.write_text(render_brief(
             brief, now=asof, window_start=start, tz=tz, tracked=tracked, institutional=institutional,
             stats=stats, unavailable=unavailable(pkg) if pkg else _unavailable(statuses), run_id=run_id,
-            late_note=late_note,
+            late_note=late_note, session=session,
         ))
         workbench_path = None
         if settings.raw["brief"].get("workbench"):
             try:
                 workbench_path = copy_to_workbench(brief_path.read_text(), brief_path, asof, tz, run_id,
-                                                   Path(settings.raw["brief"]["workbench"]), note=late_note,
-                                                   owner=settings.raw["brief"].get("owner", ""))
+                                                   Path(settings.raw["brief"]["workbench"]), note=late_note)
                 notes.append(f"Copied to the workbench: {workbench_path.name}")
             except OSError as e:
                 notes.append(f"Workbench copy failed: {e}")
@@ -338,7 +391,7 @@ def run_brief(settings: Settings, store: Store, dry_run: bool = False, collect_f
             (run_dir / "report.md").write_text(render_report(
                 run_id=run_id, now=asof, window_start=start, tz=tz, stats=stats, usage=usage,
                 budget_max=budget.max_usd, checked=checked, brief=brief, notes=notes, statuses=statuses,
-                calls=llm.calls, brief_path=brief_path, gaps=gaps,
+                calls=llm.calls, brief_path=brief_path, gaps=gaps, session=session,
             ))
             store.finish_run(run_id, status, budget.spent, str(brief_path) if brief_path else None,
                              brief.summary.text if brief else None, stats)
@@ -355,7 +408,8 @@ def run_brief(settings: Settings, store: Store, dry_run: bool = False, collect_f
     if workbench_path:
         say(f"  Workbench: {workbench_path}")
     say(f"  {len(brief.top)} top stories, {len(brief.second)} more, {len(brief.developing)} developing, "
-        f"{len(brief.calendar)} calendar entries")
+        + (f"{len(brief.session)} from {session.day()}'s session, " if session else "")
+        + f"{len(brief.calendar)} calendar entries")
     say(f"  {stats.get('claims_checked', 0)} claims checked, {stats.get('claims_verified', 0)} passed")
     say(f"  Cost ${budget.spent:.2f} (ceiling ${budget.max_usd:.2f}); {minutes:.1f} minutes")
     say(f"  Run report: {run_dir / 'report.md'}")

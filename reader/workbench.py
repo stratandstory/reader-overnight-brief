@@ -27,18 +27,15 @@ def workbench_filename(workbench: Path, now: datetime, tz: str) -> Path:
     return path
 
 
-def provenance(now: datetime, tz: str, version: int, brief_path: Path, run_id: str, note: str | None = None,
-               owner: str = "") -> str:
+def provenance(now: datetime, tz: str, version: int, brief_path: Path, run_id: str, note: str | None = None) -> str:
+    """The block at the head of the copy. It names Reader as the producer and no person, for or by: a copy
+    in a synced folder travels, and a name in it is personal information (decision of 2026-10-06)."""
     local = now.astimezone(ZoneInfo(tz))
     what = "v1" if version == 1 else f"v{version} — a later run the same morning; supersedes v{version - 1}"
     if note:
         what += f". {note}"
-    who = f"**For:** {owner}\n" if owner else ""
-    by = f"**Commissioned by:** {owner.split()[0]} direct\n" if owner else ""
     return (
-        who
-        + "**Produced by:** Reader (the overnight markets brief pipeline)\n"
-        + by
+        "**Produced by:** Reader\n"
         + f"**Date:** {local.strftime('%Y-%m-%d')}\n"
         + f"**Version:** {what}\n"
         + f"**Project:** {PROJECT}\n"
@@ -50,12 +47,12 @@ def provenance(now: datetime, tz: str, version: int, brief_path: Path, run_id: s
 
 
 def copy_to_workbench(text: str, brief_path: Path, now: datetime, tz: str, run_id: str, workbench: Path,
-                      note: str | None = None, owner: str = "") -> Path:
+                      note: str | None = None) -> Path:
     """Writes the brief, headed by the workbench's provenance block, and returns the new path.
     Raises if the folder is missing (Drive not mounted): the caller decides how loudly to say so."""
     if not workbench.is_dir():
         raise FileNotFoundError(f"workbench folder not found: {workbench}")
     path = workbench_filename(workbench, now, tz)
     version = 1 if path.stem.endswith(SLUG) else int(path.stem.rsplit("-v", 1)[1])
-    path.write_text(provenance(now, tz, version, brief_path, run_id, note, owner) + text)
+    path.write_text(provenance(now, tz, version, brief_path, run_id, note) + text)
     return path

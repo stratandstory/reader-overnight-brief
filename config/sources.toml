@@ -416,6 +416,21 @@ terms_note = "No terms page exists, only a privacy policy"
 categories = ["Business", "Energy", "China"]
 # the site-wide feed (about 260 items) tagged by vertical; only these categories are kept. robots.txt blocks GPTBot
 
+[[source]]
+id = "the_information"
+publisher = "The Information"
+section = "Articles and briefings"
+url = "https://www.theinformation.com/feed"
+kind = "news"
+tier = 2
+owner = "The Information"
+terms = "restricts"
+terms_note = "Terms of 2025-07-03 bar any automated system (robots, spiders, offline readers) used to access the service, and use to train AI; no clause on feeds"
+# Added 2026-10-06: technology and AI scoops that other feeds carry hours later or not at all. Mon Oct 5, 2:14 PM,
+# Microsoft cutting its internal Claude spending by a third (Meta too); none of Reader's sources carried it. Atom,
+# 20 entries over about three days; summaries ~700 characters for articles, ~300 for briefings. Most reports rest on
+# unnamed people, so tier 2: alone, they go to Developing. robots.txt allows the feed to Reader's agent
+
 # ---------------------------------------------------------------- Official (primary)
 [[source]]
 id = "fed_press"

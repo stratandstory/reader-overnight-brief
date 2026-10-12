@@ -36,6 +36,15 @@ In `config/settings.toml`, under `[brief]`:
 
 These are ceilings. A quiet night still gets a short brief; Reader never pads.
 
+Under `[session]`, the previous trading day's highlights: news reported between that day's brief and the close, which no overnight window covers.
+
+| Setting | Default | What it is |
+|---|---|---|
+| `enabled` | true | `false` leaves the section out, and the brief covers only the time since the close |
+| `max_stories` | 3 | most stories in the section |
+| `min_materiality` | 3 | the analyst's 1-to-5 rating a story needs (3 = moves a sector or a major stock) |
+| `analyst_items` | 60 | most of the day's items shown to the analyst, besides the night's |
+
 ## A "Why it matters" line
 
 Off by default. With `analysis = "labelled"` under `[brief]`, each item gets one line of the editor's own interpretation, in italics, marked **Why it matters**. It's the only text in the brief that no source states, which is why it's off by default and always labelled when on.
@@ -58,10 +67,9 @@ To have each brief copied to a folder you can reach from other devices (a synced
 ```toml
 [brief]
 workbench = "/Users/you/path/to/the/folder"
-owner = "Your Name"
 ```
 
-Each copy is named like `2026-10-06-reader-overnight-markets-brief.md`, starts with a short provenance block naming `owner`, and is never overwritten (a second brief the same day becomes `-v2`). If the folder can't be found, the brief is still written and the run says so.
+Each copy is named like `2026-10-06-reader-overnight-markets-brief.md`, starts with a short provenance block (produced by Reader, the date, the version, where the run's audit trail is), and is never overwritten (a second brief the same day becomes `-v2`). If the folder can't be found, the brief is still written and the run says so.
 
 ## The release calendar
 

@@ -125,7 +125,7 @@ class FakeLLM:
                       why_it_matters="A 7% move is possible." if key == "T1" else "Worth watching.",
                       audiences=["trading"]) for key, title in titles.items()]
         return WriteOut(summary="Waller backs more cuts.", summary_claims=["V1"], top=items, second=[], developing=[],
-                        calendar=re.findall(r"^\[(K\d+)\]", user, re.M))
+                        session=[], calendar=re.findall(r"^\[(K\d+)\]", user, re.M))
 
     def audit(self, user):
         return AuditOut(lines=[
@@ -168,8 +168,11 @@ class PipelineTest(unittest.TestCase):
             # corroborated by two independent outlets: both links present
             self.assertIn("https://wsj.example/waller", brief)
             self.assertIn("https://cnbc.example/waller", brief)
-            # a sentence resting on an unconfirmed tier-1 report names the outlet
-            self.assertIn("Bloomberg reports: Acme deal talks.", brief)
+            # a sentence resting on an unconfirmed tier-1 report names the outlet; this one also cites Acme's own
+            # release, so the outlet's name goes on Bloomberg's claim alone, never over the whole sentence
+            self.assertIn("Bloomberg reports: Acme is in talks to buy Widget, people familiar with the matter say. "
+                          "Acme will report third-quarter results on October 6, 2026.", brief)
+            self.assertNotIn("Bloomberg reports: Acme deal talks.", brief)
             # an item resting only on unconfirmed reports carries the caveat
             self.assertIn("Based on unconfirmed reports (SCMP)", brief)
             # a tier-2 unconfirmed report is moved to Developing
@@ -214,7 +217,11 @@ class PipelineTest(unittest.TestCase):
             self.assertEqual(copies, ["2026-09-29-reader-overnight-markets-brief-v2.md",
                                       "2026-09-29-reader-overnight-markets-brief.md"])
             first = (tmp / "workbench" / copies[1]).read_text()
-            self.assertTrue(first.startswith("**For:** Pat Example\n**Produced by:** Reader"))
+            # the provenance block names Reader and no person, whatever the settings hold
+            self.assertTrue(first.startswith("**Produced by:** Reader\n**Date:** 2026-09-29\n"))
+            self.assertNotIn("Pat Example", first)
+            self.assertNotIn("**For:**", first)
+            self.assertNotIn("Commissioned", first)
             self.assertIn("**Version:** v1\n", first)
             self.assertIn("Committed copy: `Reader/briefs/Tue, Sep 29, 6.30 AM.md`", first)
             self.assertIn("## Top stories", first)
@@ -278,6 +285,18 @@ class MorningPackageTest(unittest.TestCase):
             self.assertEqual(store.open_stories(NOW.replace(year=2025)), [])
             # a late brief makes no package of its own morning
             self.assertFalse((packages / "2026-09-30").exists())
+
+    def test_footer_counts_only_sources_checked_that_morning(self):
+        # Tue Oct 6: three sources switched off weeks earlier printed as "not reachable this morning"
+        from reader.package import unavailable
+        data = {"window_start": "2026-10-05T20:00:00+00:00", "sources": [
+            {"publisher": "GlobeNewswire", "kind": "wire", "status": "robots.txt disallows or is unreachable",
+             "fetched_utc": "2026-09-26T14:02:04+00:00"},
+            {"publisher": "Bloomberg", "kind": "news", "status": "ok", "fetched_utc": "2026-10-06T10:22:00+00:00"},
+            {"publisher": "The White House", "kind": "official", "status": "HTTP 403", "fetched_utc": "2026-10-06T10:22:00+00:00"},
+            {"publisher": "TreasuryDirect", "kind": "calendar", "status": "HTTP 403", "fetched_utc": "2026-10-06T10:22:00+00:00"},
+        ]}
+        self.assertEqual(unavailable(data), ["The White House"])
 
 
 if __name__ == "__main__":

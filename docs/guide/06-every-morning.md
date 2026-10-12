@@ -25,12 +25,13 @@ opens the newest brief. Briefs are plain text files (Markdown) in `~/Reader/brie
 
 ![Drawing of one brief item, labelled: the headline, the sentences each backed by a checked claim, the topic tags, the single-source marker, and the links with publisher and time](../images/brief-anatomy.svg)
 
-A brief has up to six parts. The numbers are ceilings, not targets: a quiet night gives a short brief.
+A brief has up to seven parts. The numbers are ceilings, not targets: a quiet night gives a short brief.
 
 | Part | What's in it |
 |---|---|
 | **The lead** | One sentence: the night's most important development. |
 | **Top stories** | Up to five items, most important first. |
+| **Highlights from Monday's trading day** | Up to three stories reported during the previous trading day, after that day's brief and before the 4 PM close, which no brief has carried. Named for the day: on a Monday morning it is Friday's. Everything else in the brief is overnight news. |
 | **Also worth knowing** | Up to ten shorter items. |
 | **Developing** | Up to five reports that rest on a single unconfirmed account from a second-tier outlet, named as such. |
 | **Next five trading days** | Scheduled data releases and Fed meetings, from the agencies' published calendars, plus dated events from the night's news. |
@@ -60,7 +61,7 @@ Reader can schedule itself on your Mac. There are two modes:
 | Command | What it does | Cost |
 |---|---|---|
 | `./schedule.sh collect` | Collects the news every 30 minutes, day and night. At 6:30 AM on weekdays it also saves the morning's news as a package. You run `./brief run` yourself when you want a brief. | free; each brief you run costs as usual |
-| `./schedule.sh on` | The same, and writes the brief at 6:30 AM, Monday to Friday, with a Mac notification when it's ready. | about $50 to $65 a month |
+| `./schedule.sh on` | The same, and writes the brief at 6:30 AM, Monday to Friday, with a Mac notification when it's ready. | about $55 to $75 a month |
 | `./schedule.sh status` | Shows what's scheduled and the last thing each job did. | free |
 | `./schedule.sh off` | Removes every scheduled job. | free |
 
@@ -74,9 +75,9 @@ Run these from `~/Reader`, in Terminal, or ask Claude Code.
 
 (with that morning's date). It's marked as written late. It costs the same as a normal brief.
 
-## Keep the Mac awake overnight
+## Keep the Mac awake
 
-The schedule only runs while the Mac is awake. If it sleeps, a job that was due runs when it wakes, but the half-hourly checks it slept through are lost, and on a busy night some headlines will have scrolled off their feeds. The run report lists any such gaps.
+The schedule runs only while the Mac is awake. If it sleeps, a job that was due runs when it wakes, but the half-hourly checks it slept through are lost, and on a busy day some headlines will have scrolled off their feeds. Each run report lists any such gaps. Because the brief covers the previous trading day as well as the night, keep the Mac awake around the clock on weekdays ([why](01-before-you-start.md#why-collection-runs-continuously)).
 
 To keep it awake:
 
@@ -84,7 +85,7 @@ To keep it awake:
 2. Click the search box at the top of the sidebar and type **sleep**.
 3. Turn on the option that **prevents automatic sleeping when the display is off**.
    - **Desktop Mac:** it's in **Energy**.
-   - **Laptop:** it's under **Battery → Options**, and it applies while the laptop is on its power adapter. Keep it plugged in, with the lid open.
+   - **MacBook:** it's under **Battery → Options**, and it applies while the MacBook is on its power adapter. Keep it plugged in, with the lid open.
 
 The screen can still turn off; only the Mac itself needs to stay awake. The exact wording varies between macOS versions; searching for "sleep" finds it in each.
 
