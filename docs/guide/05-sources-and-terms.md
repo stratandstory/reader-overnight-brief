@@ -22,7 +22,7 @@ Some sources Reader could reach are left out entirely: Reuters and AP publish no
 
 ## What the publishers' terms say
 
-Being allowed in by robots.txt is not the same as the publisher's terms of use agreeing to what you do with the content. Reader's author read the terms of every source on October 1, 2026, and each source in `config/sources.toml` now carries a summary (`terms_note`) and one of four labels:
+Being allowed in by robots.txt is not the same as the publisher's terms of use agreeing to what you do with the content. Strat & Story read the terms of every source on October 1, 2026, and each source in `config/sources.toml` now carries a summary (`terms_note`) and one of four labels:
 
 | Label | Meaning | Sources |
 |---|---|---:|
@@ -49,7 +49,7 @@ The **restricts** group includes most of the major financial press. Their terms 
 | `unrestricted` | The official sources, plus the five publishers whose terms don't object | Some market and international news. Thin compared with the financial press. |
 | `all` | Every source robots.txt allows, 64 in all, including the major financial press | The full brief Reader was built to write. |
 
-**Reader's author runs `all`.** The reasoning: one person's morning brief, reading headlines and summaries from the publishers' own feeds at a human pace, with links back and nothing republished, is personal use within the spirit of terms written against bulk copying, AI training and commercial resale. That is a judgment, and it is the author's. Some of those terms say otherwise in so many words. You make your own choice, and you can change it whenever you like.
+**The case for `all`:** one person's morning brief, reading headlines and summaries from the publishers' own feeds at a human pace, with links back and nothing republished, is personal use, and the terms were written against bulk copying, AI training and commercial resale. **The case against:** several of those terms bar AI use or automated access in so many words, whatever the scale. Which weighs more is your judgment. You can change your choice whenever you like.
 
 To choose, or change your choice: Claude asks you during setup, or run
 

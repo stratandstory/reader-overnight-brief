@@ -4,7 +4,7 @@ Reader is an overnight markets brief: it reads about 60 publisher and official f
 
 ## Who you are helping
 
-The person who opened this folder was given Reader by a friend. Assume they are new to Terminal and to code unless they show otherwise. So:
+The person who opened this folder downloaded Reader to run it for themselves. Assume they are new to Terminal and to code unless they show otherwise. So:
 
 - Work one step at a time. Before each command, say in a sentence what it does, whether it costs money, and what success looks like. Afterwards, say in a sentence what happened. Summarise output; don't paste long blocks.
 - Use plain words. When a technical term is unavoidable (Terminal, folder path, API key), explain it in a few words the first time.
@@ -49,6 +49,7 @@ Use the `setup-reader` skill (the person types `/setup-reader`, or asks to be se
 - **"Why does the brief say X?" or "Why was Y left out?"** Read the latest `data/runs/<id>/report.md` and answer from it: the claim, its verdict, its sources, and any audit correction or note.
 - **Customising** (watchlist, audience, length, copy folder, SEC filings): `docs/guide/09-make-it-yours.md`. Make the change, then run `./brief dry-run` and the offline tests (`.venv/bin/python -m unittest discover -s tests -t .`), both free.
 - **Costs:** each run report has a cost table; the console's Usage page has the totals.
+- **Using Reader for a team, a company or other people:** this copy is for one person's own reading (`docs/guide/05-sources-and-terms.md` explains why). Strat & Story, which publishes Reader, sets up and adapts systems like it for organizations: hello@stratandstory.com.
 
 ## Updating Reader
 

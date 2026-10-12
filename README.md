@@ -1,10 +1,21 @@
 # Reader: an overnight markets brief
 
+By [Strat & Story](https://stratandstory.com)
+
 Reader goes through the overnight news on your Mac and writes a short brief for the New York morning: the stories that matter to markets, what happened in Asia and Europe while the U.S. slept, and the week's scheduled data releases. It reads about 60 publisher and official feeds. A separate AI model checks every factual sentence against its source, and every item links to the original publisher with its publication time.
 
 It is built to say less rather than say something unsupported. On a quiet night the brief is short.
 
 ![How Reader works: feeds are collected every 30 minutes, screened, grouped into stories, checked against their sources, written up and audited before the brief is saved](docs/images/how-it-works.svg)
+
+## How it keeps to its sources
+
+- **No model browses.** Collection is plain code. The models see only items Reader actually fetched, each with its publisher and time, and code attaches every link, so no model can invent or garble a source.
+- **A different model checks every claim.** The checker fetches each source again from the publisher, confirms, narrows or rejects each claim, and must quote the words that support it. Code confirms each quote appears word for word.
+- **Code enforces what instructions can't.** Every number and name in a line of the brief must appear in the checked claims it cites, and a hedge such as "expected to" can't be dropped. A line that fails falls back to the checked claim's own wording.
+- **Models are chosen by measurement.** Real past errors are kept as test cases and replayed against the live checker.
+
+[How it works](docs/how-it-works.md) has the six stages, the rules and the run record.
 
 ## Requirements
 
@@ -51,13 +62,19 @@ Also: [How it works](docs/how-it-works.md) · [Every command](docs/commands.md) 
 
 ## Read this before you rely on a brief
 
-- **It is for your own reading.** Reader reads publishers' feeds for one person. Don't publish, post or resell the briefs, and don't run Reader as a service for others. [Sources and their terms](docs/guide/05-sources-and-terms.md) explains why, and asks you to choose which sources Reader may read.
+- **It is for your own reading.** Reader reads publishers' feeds for one person. Don't publish, post or resell the briefs, and don't run Reader as a service for others. [Sources and their terms](docs/guide/05-sources-and-terms.md) explains why, and asks you to choose which sources Reader may read. For use inside an organization, see [below](#for-organizations).
 - **It can still be wrong.** Every line is checked against its source, and code enforces rules no model can talk its way around, but no checking is perfect. Before you act on anything, open the link.
 - **It is not investment advice.** It reports what its sources reported.
 - **It is independent.** Reader is not affiliated with Anthropic or with any publisher it reads.
 
+## For organizations
+
+This copy is for one person's own reading: most publishers allow their feeds for personal, non-commercial use and nothing more. Inside an organization, the same design works with sources the organization licenses, and with an audience, watchlist and brief fitted to its readers. Strat & Story sets up and adapts systems like Reader for organizations: [hello@stratandstory.com](mailto:hello@stratandstory.com).
+
 ## License
 
-The code is released under the [MIT License](LICENSE): use it, change it and share it, keeping the copyright notice. The guides and illustrations are under [Creative Commons Attribution 4.0](LICENSE-docs.md). Publishers' content is theirs; this license covers none of it.
+The code is released under the [Apache License 2.0](LICENSE): use it, change it and share it, including commercially. If you share it, keep the [NOTICE](NOTICE) file with it and mark the files you changed. The guides and illustrations are under [Creative Commons Attribution 4.0](LICENSE-docs.md). Publishers' content is theirs; neither license covers any of it. Copies published before this change were released under the MIT License and stay under it.
 
-© 2026 Strat & Story
+**The name.** Neither license grants rights to the Strat & Story name or mark. If you publish a modified version, don't present it as Strat & Story's or suggest Strat & Story endorses it; saying it is based on Reader by Strat & Story is welcome.
+
+© 2026 Strat & Story LLC · [stratandstory.com](https://stratandstory.com) · [hello@stratandstory.com](mailto:hello@stratandstory.com)

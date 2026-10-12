@@ -60,7 +60,7 @@ This is their decision. Explain it neutrally, in a few short paragraphs, from `d
 - how Reader reads (publishers' own feeds, robots.txt obeyed, an honest name, every 30 minutes, headlines and summaries only for journalism, links back, nothing republished);
 - that most of the major financial press have terms restricting automated access or AI use, some naming AI use outright;
 - the three choices, with what each brief is like. Run `./brief choose-sources` to show the real counts and publishers;
-- that Reader's author runs `all`, on the reading that one person's brief made this way is personal use, and that this is the author's judgment, not legal advice. They choose, and can change it any time.
+- the case for `all` (one person's brief, made this way, is personal use) and the case against (several terms bar AI use or automated access in so many words), as the guide puts them. Which weighs more is their judgment; this is not legal advice. They choose, and can change it any time.
 
 Ask which they want. Then run `./brief choose-sources <official|unrestricted|all>` and confirm what was saved.
 
