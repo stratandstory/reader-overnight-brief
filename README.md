@@ -64,12 +64,13 @@ Also: [How it works](docs/how-it-works.md) · [Every command](docs/commands.md) 
 
 - **It is for your own reading.** Reader reads publishers' feeds for one person. Don't publish, post or resell the briefs, and don't run Reader as a service for others. [Sources and their terms](docs/guide/05-sources-and-terms.md) explains why, and asks you to choose which sources Reader may read. For use inside an organization, see [below](#for-organizations).
 - **It can still be wrong.** Every line is checked against its source, and code enforces rules no model can talk its way around, but no checking is perfect. Before you act on anything, open the link.
+- **Some links need a subscription.** The brief needs none: Reader reads the free headlines and summaries publishers put in their feeds. But many links lead to paywalled articles (The Wall Street Journal, the Financial Times, Bloomberg, The Information and others), and checking a line against the full story takes that publisher's subscription. A subscription doesn't by itself change what a publisher's terms say about automated or AI use.
 - **It is not investment advice.** It reports what its sources reported.
 - **It is independent.** Reader is not affiliated with Anthropic or with any publisher it reads.
 
 ## For organizations
 
-This copy is for one person's own reading: most publishers allow their feeds for personal, non-commercial use and nothing more. Inside an organization, the same design works with sources the organization licenses, and with an audience, watchlist and brief fitted to its readers. Strat & Story sets up and adapts systems like Reader for organizations: [hello@stratandstory.com](mailto:hello@stratandstory.com).
+This copy is for one person's own reading: most publishers allow their feeds for personal, non-commercial use and nothing more. Inside an organization, the same design works with sources the organization licenses, and with an audience, watchlist and brief fitted to its readers. Strat & Story sets up and adapts systems like Reader for organizations: [hello@stratandstory.com](mailto:hello@stratandstory.com). If your organization already licenses news through a provider (Factiva, Bloomberg or LSEG, for example), ask the provider whether that license covers automated retrieval and AI use. Licenses differ, and the answer decides which sources a system like this can use.
 
 ## License
 

@@ -75,6 +75,6 @@ The ids are in [the source table](../sources-table.md).
 - **Don't run Reader for other people,** as a service or inside a company product.
 - **Don't make it greedier.** Leave the 30-minute interval, the honest User-Agent and the robots.txt check as they are. Don't add sources by imitating a browser, getting past paywalls or logins, or fetching article text.
 - **If a publisher asks you to stop, stop.** Turn its sources off.
-- **Paying for the news is still the right thing to do.** Reader shows you headlines and links. To read the story, open the link; a subscription is how you read it in full and how the reporting gets paid for.
+- **Paying for the news is still the right thing to do.** Reader shows you headlines and links. To read the story, open the link; a subscription is how you read it in full and how the reporting gets paid for. Many of the links (WSJ, FT, Bloomberg, The Information) need one to read past the headline. A subscription doesn't by itself change what a publisher's terms say about automated or AI use; the [source table](../sources-table.md) has each publisher's terms.
 
 Next: [6. Every morning](06-every-morning.md)
